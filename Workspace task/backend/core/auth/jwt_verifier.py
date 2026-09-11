@@ -30,6 +30,61 @@ class LocalJWTGenerator:
         except JWTError as e:
             logger.error(f"Token generation failed: {e}")
             raise ValueError(f"Failed to sign token: {e}") from e
+        
+    def create_reset_token(
+        self,
+        user_id : str
+    ) -> str:
+        settings = self.settings
+        expire = datetime.now(timezone.utc) + timedelta(
+        minutes = 15
+        )
+        payload = {
+            "sub" : user_id,
+            "type" : "password_reset",
+            "exp" : expire
+        }
+
+        try:
+            token = jwt.encode(
+                payload,
+                settings.JWT_SECRET.get_secret_value(),
+                algorithm = settings.JWT_ALGORITHM
+            )
+            return token
+        
+        except JWTError as e:
+            logger.error(
+                f"Reset token generation failed: {e}"
+            )
+            raise ValueError(
+                f"Failed to generate reset token: {e}"
+            ) from e
+    def verify_reset_token(
+        self,
+        token: str
+    ) -> str:
+        settings = self.settings
+        try:
+            payload = jwt.decode(
+                token,
+                settings.JWT_SECRET.get_secret_value(),
+                algorithms=[settings.JWT_ALGORITHM]
+            )
+            if payload.get("type") != "password_reset":
+                raise ValueError("Invalid reset token")
+            user_id = payload.get("sub")
+            if not user_id:
+                raise ValueError("Invalid reset token")
+            return user_id
+        except JWTError as e:
+            logger.error(
+                f"Reset token verification failed: {e}"
+            )
+            raise ValueError(
+                "Invalid or expired reset token"
+            ) from e
+        
 _jwt_generator: LocalJWTGenerator | None = None
 
 def get_jwt_generator() -> LocalJWTGenerator:

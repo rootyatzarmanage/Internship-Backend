@@ -12,7 +12,7 @@ register_router = APIRouter(
 )
 
 @register_router.post(
-    "/register",
+    "",
     response_model = SuccessResponse[RegisterResponse],
     status_code = status.HTTP_201_CREATED
 )

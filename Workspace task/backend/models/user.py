@@ -16,17 +16,17 @@ class User(Base):
         default = uuid.uuid4
     )
     email: Mapped[str] = mapped_column(
-        String[255],
+        String(255),
         nullable=False,
         unique=True,
         index = True
     )
     password_hash : Mapped[str] = mapped_column(
-        String[255],
+        String(255),
         nullable=False
     )
     full_name : Mapped[str] = mapped_column(
-        String[100],
+        String(100),
         nullable=False
     )
     is_active : Mapped[int] = mapped_column(

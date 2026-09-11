@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.user import User
@@ -25,3 +26,16 @@ class UserRepository(BaseRepository[User]):
         return (await self.get_by_email(
             email
         )) is not None
+    
+    async def get_by_id(
+        self,
+        user_id: uuid.UUID
+    ) -> User | None:
+
+        result = await self.session.execute(
+            select(User).where(
+            User.id == user_id,
+            User.deleted_at.is_(None)
+            )
+        )
+        return result.scalar_one_or_none()

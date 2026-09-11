@@ -13,14 +13,22 @@ class RegisterRequest(BaseModel):
         if not v:
             raise ValueError("Email cannot be empty")
         return v
+
+    @field_validator("password")
+    @classmethod
     def password_format(cls, v:str) -> str:
         v = v.strip()
         if not v:
             raise ValueError("Password cannot be empty")
         if len(v) < 8:
             raise ValueError("Password must be greater than 8")
+        return v
+
+    @field_validator("full_name")
+    @classmethod
     def full_name_format(cls, v:str) -> str:
         v = v.strip()
         if not v:
             raise ValueError("Full name must not be empty")
+        return v
 
