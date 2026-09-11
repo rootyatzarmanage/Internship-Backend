@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter ,status
 
 from backend.core.database.dependencies import DatabaseSession
 from backend.schemas.requests.auth import LoginRequest
@@ -13,7 +13,8 @@ auth_router = APIRouter(
 
 @auth_router.post(
     "/login",
-    response_model = SuccessResponse[LoginResponse]
+    response_model = SuccessResponse[LoginResponse],
+    status_code = status.HTTP_200_OK   
 )
 async def login(
     body : LoginRequest,
@@ -28,3 +29,5 @@ async def login(
         message = "Login Successfully",
         data = data 
     )
+
+

@@ -17,3 +17,11 @@ class UserRepository(BaseRepository[User]):
             )
         )
         return result.scalar_one_or_none()
+    
+    async def email_exists(
+        self,
+        email : str
+    )   -> bool:
+        return (await self.get_by_email(
+            email
+        )) is not None
