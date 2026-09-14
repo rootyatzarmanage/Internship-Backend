@@ -1,4 +1,4 @@
-from fastapi import APIRouter ,status
+from fastapi import APIRouter ,status, Response
 
 from backend.core.database.dependencies import DatabaseSession
 from backend.schemas.requests.auth import LoginRequest
@@ -18,11 +18,20 @@ auth_router = APIRouter(
 )
 async def login(
     body : LoginRequest,
-    session : DatabaseSession
+    session : DatabaseSession,
+    response : Response
 ) ->  LoginResponse:
     service = AuthService(session)
     data = await service.Auth(
         body
+    )
+    response.set_cookie(
+        key="ycpa_id_token",
+        value=data.access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60 * 60
     )
     return SuccessResponse(
         success = True,

@@ -21,6 +21,11 @@ class UnauthorizedException(AppException):
         ):
         super().__init__(message, 401, "UNAUTHORIZED")
 
+class ForbiddenException(AppException):
+    def __init__(self, message: str = "Access forbidden"):
+        super().__init__(message, 403, "FORBIDDEN")
+
+
 class ConflictException(AppException):
     def __init__(
             self,

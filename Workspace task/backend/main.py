@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from backend.api.v1.endpoints.auth import auth_router
 from backend.api.v1.endpoints.register import register_router
 from backend.api.v1.endpoints.forgot_password import forgot_router
+from backend.api.v1.endpoints.workspace import workspace_router
 from backend.core.config import get_settings
 from backend.core.database.base import Base
 from backend.core.database.engine import engine
@@ -58,6 +59,7 @@ app.add_exception_handler(
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 app.include_router(register_router,prefix=settings.API_V1_PREFIX)
 app.include_router(forgot_router,prefix=settings.API_V1_PREFIX)
+app.include_router(workspace_router,prefix=settings.API_V1_PREFIX)
 
 os.makedirs(settings.LOCAL_STORAGE_PATH, exist_ok=True)
 app.mount(

@@ -30,7 +30,31 @@ class LocalJWTGenerator:
         except JWTError as e:
             logger.error(f"Token generation failed: {e}")
             raise ValueError(f"Failed to sign token: {e}") from e
-        
+
+    def verify_access_token(
+        self,
+        token: str
+    ) -> str:
+        settings = self.settings
+        try:
+            payload = jwt.decode(
+                token,
+                settings.JWT_SECRET.get_secret_value(),
+                algorithms=[settings.JWT_ALGORITHM]
+            )
+            user_id = payload.get("sub")
+            if not user_id:
+                raise ValueError("Invalid token claims")
+            return user_id
+
+        except JWTError as e:
+            logger.error(
+                f"Access token verification failed: {e}"
+            )
+            raise ValueError(
+                "Invalid or expired access token"
+            ) from e
+            
     def create_reset_token(
         self,
         user_id : str
