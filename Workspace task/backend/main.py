@@ -11,6 +11,7 @@ from backend.api.v1.endpoints.forgot_password import forgot_router
 from backend.api.v1.endpoints.workspace import workspace_router
 from backend.api.v1.endpoints.project import project_router
 from backend.api.v1.endpoints.line_chart import line_chart_router
+from backend.api.v1.endpoints.bar_chart import bar_chart_router
 from backend.core.config import get_settings
 from backend.core.database.base import Base
 from backend.core.database.engine import engine
@@ -64,6 +65,7 @@ app.include_router(forgot_router,prefix=settings.API_V1_PREFIX)
 app.include_router(workspace_router,prefix=settings.API_V1_PREFIX)
 app.include_router(project_router,prefix=settings.API_V1_PREFIX)
 app.include_router(line_chart_router,prefix=settings.API_V1_PREFIX)
+app.include_router(bar_chart_router,prefix=settings.API_V1_PREFIX)
 
 os.makedirs(settings.LOCAL_STORAGE_PATH, exist_ok=True)
 app.mount(
