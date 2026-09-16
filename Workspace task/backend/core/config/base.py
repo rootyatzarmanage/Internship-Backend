@@ -19,7 +19,7 @@ class BaseAppSettings(BaseSettings):
     DEBUG: bool = False  
     LOCAL_STORAGE_PATH: str = "storage" 
     ENVIRONMENT: str = "local"
-    APP_NAME: str = "Coupon API"
+    APP_NAME: str = "Test API"
     API_V1_PREFIX: str = "/api/v1"
     JWT_SECRET: SecretStr = Field(default_factory=lambda: SecretStr(secrets.token_urlsafe(32)))
     JWT_ALGORITHM: str = "HS256"
