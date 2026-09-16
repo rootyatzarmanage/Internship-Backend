@@ -4,7 +4,7 @@ from backend.core.config import get_settings
 
 class R2Storage:
     def __init__(self):
-        settings = get_settings
+        settings = get_settings()
         self.bucket_name = settings.R2_BUCKET_NAME
         self.client = boto3.client(
             "s3",
@@ -12,8 +12,8 @@ class R2Storage:
                 f"https://{settings.R2_ACCOUNT_ID}"
                 ".r2.cloudflarestorage.com"
             ),
-            aws_access_key_id = settings.R2_ACCESS_KEY_ID,
-            aws_secret_access_key = settings.R2_SECRET_ACCESS_KEY,
+            aws_access_key_id = settings.R2_ACCESS_KEY_ID.get_secret_value(),
+            aws_secret_access_key = settings.R2_SECRET_ACCESS_KEY.get_secret_value(),
             region_name = "auto",
             config = Config(
                 signature_version = "s3v4"
@@ -45,7 +45,7 @@ class R2Storage:
             Bucket = self.bucket_name,
             Key = object_key,
         )
-_r2_storage = R2Storage | None = None
+_r2_storage : R2Storage | None = None
 
 def get_r2_storage() -> R2Storage:
     global _r2_storage

@@ -59,4 +59,14 @@ class FileService(BaseService):
             )
             await self.session.commit()
             await self.session.refresh(file_record)
+            return FileResponse.model_validate(file_record)
+        except Exception:
+            try:
+                self.storage.delete_file(
+                    object_key
+                )
+            except Exception:
+                pass
+            await self.session.rollback()
+            raise
 
