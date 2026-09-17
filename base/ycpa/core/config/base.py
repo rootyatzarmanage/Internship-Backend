@@ -37,6 +37,10 @@ class BaseAppSettings(BaseSettings):
         ...,
         description="Async Database URL"
     )
+    DATABASE_URL_SYNC: PostgresDsn = Field(
+        ...,
+        description="Sync Database URL for Alembic migrations"
+    )
 
     LOCAL_STORAGE_PATH: str = Field(
         default="storage",
