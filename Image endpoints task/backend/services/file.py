@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.core.exceptions import ConflictException
 from backend.core.storage.r2 import get_r2_storage
 from backend.models.file import File
@@ -46,10 +45,11 @@ class FileService(BaseService):
                 object_key,
                 upload_file.content_type
             )
+            category_id = uuid.uuid4()
             file_record = File(
                 id = file_id,
                 name = file_name,
-                category = body.category,
+                category = category_id,
                 type = extension,
                 user_id = user_id,
                 object_key = object_key

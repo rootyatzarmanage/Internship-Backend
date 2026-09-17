@@ -11,7 +11,7 @@ def utc_now():
     return datetime.now(timezone.utc)
 
 class FileCategory(str,enum.Enum):
-    wip = "wip",
+    wip = "wip"
     shared = "shared"
     published = "published"
     archived = "archived"
@@ -25,15 +25,13 @@ class File(Base):
         default=uuid.uuid4
     )
     name : Mapped[str] = mapped_column(
-        String[255],
+        String[255],    
         nullable= False
     )
-    category : Mapped[FileCategory] = mapped_column(
-        SAEnum(
-            FileCategory,
-            name = "file_category"
-        ),
-        nullable=False
+    category : Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=False,
+        default=uuid.uuid4
     )
     type : Mapped[str] = mapped_column(
         String[50],
