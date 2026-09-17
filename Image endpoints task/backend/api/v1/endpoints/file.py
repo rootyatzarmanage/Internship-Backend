@@ -3,7 +3,7 @@ from fastapi import APIRouter, status ,File as FastAPIFile, Form, UploadFile
 from backend.core.auth.dependencies import CurrentUser
 from backend.core.database.dependencies import DatabaseSession
 from backend.core.schemas.responses import SuccessResponse
-
+from backend.models.file import FileCategory
 from backend.schemas.requests.file import FileUploadRequest
 from backend.schemas.response.file import FileResponse
 from backend.services.file import FileService
@@ -19,7 +19,7 @@ file_router = APIRouter(
     status_code= status.HTTP_201_CREATED
 )
 async def upload_file(
-    category : str = Form(...),
+    category : FileCategory = Form(...),
     file : UploadFile = FastAPIFile(...),
     session : DatabaseSession = None,
     current_user : CurrentUser = None

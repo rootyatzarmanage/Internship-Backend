@@ -1,12 +1,20 @@
 import uuid
+import enum 
 from datetime import datetime,timezone
 from sqlalchemy import String, DateTime,ForeignKey
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped,mapped_column
 from backend.core.database.base import Base
 
 def utc_now():
     return datetime.now(timezone.utc)
+
+class FileCategory(str,enum.Enum):
+    wip = "wip",
+    shared = "shared"
+    published = "published"
+    archived = "archived"
 
 class File(Base):
     __tablename__ = "files"
@@ -20,8 +28,11 @@ class File(Base):
         String[255],
         nullable= False
     )
-    category : Mapped[str] = mapped_column(
-        String[100],
+    category : Mapped[FileCategory] = mapped_column(
+        SAEnum(
+            FileCategory,
+            name = "file_category"
+        ),
         nullable=False
     )
     type : Mapped[str] = mapped_column(

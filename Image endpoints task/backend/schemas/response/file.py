@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel , field_validator, ConfigDict
+from backend.models.file import FileCategory
 
 class FileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id : uuid.UUID
     name : str
-    category : str
+    category : FileCategory
     type : str
     user_id : uuid.UUID
     created_at : datetime
@@ -23,9 +24,8 @@ class FileResponse(BaseModel):
 
     @field_validator("category")
     @classmethod
-    def category_format(cls,v:str)-> str:
-        v = v.strip()
-        if not v:
+    def category_format(cls,v:FileCategory)-> FileCategory:
+        if v is None:
             raise ValueError("Category cannot be empty")
         return v
 
