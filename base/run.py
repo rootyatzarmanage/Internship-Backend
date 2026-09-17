@@ -17,18 +17,18 @@ if __name__ == "__main__":
     paf_process = None
     try:
         paf_process = subprocess.Popen(
-            [python, "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"],
+            [python, "-m", "uvicorn", "ycpa.main:app", "--host", "0.0.0.0", "--port", "8001"],
             cwd=os.path.dirname(os.path.abspath(__file__)),
         )
-        print(f"PAF backend started on port 8001 (PID: {paf_process.pid})")
+        print(f"PAF ycpa started on port 8001 (PID: {paf_process.pid})")
 
         reload = os.getenv("RELOAD", "true").lower() == "true"
         uvicorn.run(
-            "backend.main:app",
+            "ycpa.main:app",
             host=os.getenv("HOST", "0.0.0.0"),
             port=int(os.getenv("PORT", "8000")),
             reload=reload,
-            reload_dirs=["backend"] if reload else None,
+            reload_dirs=["ycpa"] if reload else None,
         )
     except KeyboardInterrupt:
         pass
@@ -36,5 +36,5 @@ if __name__ == "__main__":
         if paf_process:
             paf_process.terminate()
             paf_process.wait()
-            print("PAF backend stopped")
+            print("PAF ycpa stopped")
  
