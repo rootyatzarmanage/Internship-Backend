@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from jose import JWTError,jwt
 from ycpa.core.config import get_settings
@@ -30,6 +31,15 @@ class LocalJWTGenerator:
         except JWTError as e:
             logger.error(f"Token generation failed: {e}")
             raise ValueError(f"Failed to sign token: {e}") from e
+        
+    async def verify_token(self, token: str, *, expected_use: str = "id") -> dict[str, Any]:
+        settings = self.settings
+        secret = settings.JWT_SECRET.get_secret_value()
+        try:
+            claims = jwt.decode(token, secret, algorithms=[settings.JWT_ALGORITHM])
+        except JWTError as e:
+            raise ValueError(f"Token verification failed: {e}") from e
+        return claims
 
     def verify_access_token(
         self,
@@ -109,10 +119,10 @@ class LocalJWTGenerator:
                 "Invalid or expired reset token"
             ) from e
         
-_jwt_generator: LocalJWTGenerator | None = None
+_jwt_verifier: LocalJWTGenerator | None = None
 
-def get_jwt_generator() -> LocalJWTGenerator:
-    global _jwt_generator
-    if _jwt_generator is None:
-        _jwt_generator = LocalJWTGenerator()
-    return _jwt_generator    
+def get_jwt_verifier() -> LocalJWTGenerator:
+    global _jwt_verifier
+    if _jwt_verifier is None:
+        _jwt_verifier = LocalJWTGenerator()
+    return _jwt_verifier  

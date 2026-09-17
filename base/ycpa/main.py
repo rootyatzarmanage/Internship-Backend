@@ -5,9 +5,9 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncConnection
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
-from ycpa.api.v1.endpoints.auth import auth_router
-from ycpa.api.v1.endpoints.register import register_router
-from ycpa.api.v1.endpoints.forgot_password import forgot_router
+from ycpa.api.v1.endpoints.users import router as users_router
+from ycpa.api.v1.endpoints.auth import router as auth_router
+from ycpa.api.v1.endpoints.cognito import router as cognito_router
 from ycpa.core.config import get_settings
 from ycpa.core.database.base import Base
 from ycpa.core.database.engine import engine
@@ -55,9 +55,9 @@ app.add_exception_handler(
 # middleware_manifest = register_middleware(app, settings)
 # VisualLogger.middleware_table(middleware_manifest)
 # register_exception_handlers(app)
+app.include_router(cognito_router, prefix=settings.API_V1_PREFIX)
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
-app.include_router(register_router,prefix=settings.API_V1_PREFIX)
-app.include_router(forgot_router,prefix=settings.API_V1_PREFIX)
+app.include_router(users_router, prefix=settings.API_V1_PREFIX)
 
 os.makedirs(settings.LOCAL_STORAGE_PATH, exist_ok=True)
 app.mount(
