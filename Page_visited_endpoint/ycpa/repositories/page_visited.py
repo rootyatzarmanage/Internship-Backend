@@ -53,52 +53,54 @@ class PageVisitedRepository(BaseRepository[PageVisited]):
 
     async def get_page_visits(
         self,
+        *,
+        country_name: str | None = None,
+        page_name: str | None = None,
     ) -> list[PageVisited]:
 
-        result = await self.session.execute(
-            select(PageVisited)
-            .order_by(
-                PageVisited.created_at.desc()
-            )
-        )
+        query = select(PageVisited)
 
-        return list(
-            result.scalars().all()
-        )
-
-    async def get_page_visits_by_country(
-        self,
-        country_name: str,
-    ) -> list[PageVisited]:
-
-        result = await self.session.execute(
-            select(PageVisited)
-            .where(
+        if country_name:
+            query = query.where(
                 func.lower(PageVisited.country_name) == country_name.lower()
             )
-            .order_by(
-                PageVisited.created_at.desc()
-            )
+
+        if page_name:
+            query = query.where(PageVisited.page_name == page_name)
+
+        query = query.order_by(PageVisited.created_at.desc())
+
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_countries(
+        self,
+    ) -> list[str]:
+
+        result = await self.session.execute(
+            select(PageVisited.country_name)
+            .where(PageVisited.country_name.is_not(None))
+            .where(PageVisited.country_name != "")
+            .distinct()
+            .order_by(PageVisited.country_name)
         )
 
         return list(
             result.scalars().all()
         )
 
-    async def get_page_visits_by_page(
+    async def get_pages(
         self,
-        page_name: str,
-    ) -> list[PageVisited]:
+    ) -> list[str]:
 
         result = await self.session.execute(
-            select(PageVisited)
-            .where(
-                PageVisited.page_name == page_name
-            )
-            .order_by(
-                PageVisited.created_at.desc()
-            )
+            select(PageVisited.page_name)
+            .where(PageVisited.page_name.is_not(None))
+            .where(PageVisited.page_name != "")
+            .distinct()
+            .order_by(PageVisited.page_name)
         )
+
         return list(
             result.scalars().all()
         )

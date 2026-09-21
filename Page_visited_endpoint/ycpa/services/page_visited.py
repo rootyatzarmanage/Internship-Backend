@@ -101,21 +101,25 @@ class PageVisitedService:
 
     async def get_page_visits(
         self,
-    ) -> list[PageVisited]:
-        return await self.repository.get_page_visits()
+        *,
+        country_name: str | None = None,
+        page_name: str | None = None,
+    ) -> list[PageVisited] :
 
-    async def get_page_visits_by_country(
-        self,
-        country_name: str,
-    ) -> list[PageVisited]:
-        return await self.repository.get_page_visits_by_country(
-            country_name
+        return await self.repository.get_page_visits(
+            country_name=country_name,
+            page_name=page_name,
         )
 
-    async def get_page_visits_by_page(
+    async def get_countries(
         self,
-        page_name: str,
-    ) -> list[PageVisited]:
-        return await self.repository.get_page_visits_by_page(
-            page_name
-        )
+    ) -> list[str]:
+
+        return await self.repository.get_countries()
+
+
+    async def get_pages(
+        self,
+    ) -> list[str]:
+
+        return await self.repository.get_pages()

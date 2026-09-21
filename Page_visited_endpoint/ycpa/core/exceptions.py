@@ -9,8 +9,7 @@ class AppException(Exception):
         error_code: str | None = None,
         details: Optional[Any] = None,
     ):
-        self.messAny = None
-        self.messAny | None
+        self.message = message
         self.status_code = status_code
         self.error_code = error_code or self.__class__.__name__
         self.details = details or {}

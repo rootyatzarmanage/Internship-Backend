@@ -31,3 +31,12 @@ class PageVisitedResponse(BaseModel):
     @property
     def is_authenticated(self) -> int:
         return 1 if self.user_id is not None else 0
+
+class PageVisitedFilterResponse(BaseModel):
+    items: list[PageVisitedResponse]
+    countries: list[str]
+    pages: list[str]
+
+class PageVisitedFilterOptionsResponse(BaseModel):
+    countries: list[str]
+    pages: list[str]
