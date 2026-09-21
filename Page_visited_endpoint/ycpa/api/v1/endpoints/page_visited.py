@@ -82,3 +82,156 @@ async def create_page_visited(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to record page visit.",
         )
+    
+@router.get(
+    "",
+    response_model=BaseResponse[list[PageVisitedResponse]],
+    status_code=status.HTTP_200_OK,
+    summary="Get all page visits",
+)
+async def get_page_visits(
+    session: DatabaseSession,
+) -> BaseResponse[list[PageVisitedResponse]]:
+
+    try:
+        repository = PageVisitedRepository(session)
+        service = PageVisitedService(repository)
+        page_visits = await service.get_page_visits()
+        
+        logger.info(
+            "Page visits fetched successfully",
+            extra={
+                "count": len(page_visits),
+            },
+        )
+        
+        data = [
+            PageVisitedResponse.model_validate(page_visit)
+            for page_visit in page_visits
+        ]
+        
+        return SuccessResponse(
+            success=True,
+            message="Page visits fetched successfully.",
+            data=data,
+        )
+        
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Failed to fetch page visits",
+            extra={},
+        )
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch page visits.",
+        )
+
+@router.get(
+    "/country/{country_name}",
+    response_model=BaseResponse[list[PageVisitedResponse]],
+    status_code=status.HTTP_200_OK,
+    summary="Get page visits by country",
+)
+async def get_page_visits_by_country(
+    country_name: str,
+    session: DatabaseSession,
+) -> BaseResponse[list[PageVisitedResponse]]:
+
+    try:
+        repository = PageVisitedRepository(session)
+        service = PageVisitedService(repository)
+        
+        page_visits = await service.get_page_visits_by_country(
+            country_name=country_name
+        )
+        
+        logger.info(
+            "Page visits fetched successfully by country",
+            extra={
+                "country_name": country_name,
+                "count": len(page_visits),
+            },
+        )
+        
+        data = [
+            PageVisitedResponse.model_validate(page_visit)
+            for page_visit in page_visits
+        ]
+        
+        return SuccessResponse(
+            success=True,
+            message="Page visits fetched successfully.",
+            data=data,
+        )
+        
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Failed to fetch page visits by country",
+            extra={
+                "country_name": country_name,
+            },
+        )
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch page visits by country.",
+        )
+
+
+@router.get(
+    "/page/{page_name:path}",
+    response_model=BaseResponse[list[PageVisitedResponse]],
+    status_code=status.HTTP_200_OK,
+    summary="Get page visits by page",
+)
+async def get_page_visits_by_page(
+    page_name: str,
+    session: DatabaseSession,
+) -> BaseResponse[list[PageVisitedResponse]]:
+
+    try:
+        repository = PageVisitedRepository(session)
+        service = PageVisitedService(repository)
+        
+        page_visits = await service.get_page_visits_by_page(
+            page_name=page_name
+        )
+        
+        logger.info(
+            "Page visits fetched successfully by page",
+            extra={
+                "page_name": page_name,
+                "count": len(page_visits),
+            },
+        )
+        
+        data = [
+            PageVisitedResponse.model_validate(page_visit)
+            for page_visit in page_visits
+        ]
+        
+        return SuccessResponse(
+            success=True,
+            message="Page visits fetched successfully.",
+            data=data,
+        )
+        
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Failed to fetch page visits by page",
+            extra={
+                "page_name": page_name,
+            },
+        )
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch page visits by page.",
+        )

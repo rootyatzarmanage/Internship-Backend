@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from ycpa.models.page_visited import PageVisited
 from ycpa.repositories.base import BaseRepository
@@ -49,3 +50,55 @@ class PageVisitedRepository(BaseRepository[PageVisited]):
         self.session.add(page_visit)
         await self.session.flush()
         return page_visit
+
+    async def get_page_visits(
+        self,
+    ) -> list[PageVisited]:
+
+        result = await self.session.execute(
+            select(PageVisited)
+            .order_by(
+                PageVisited.created_at.desc()
+            )
+        )
+
+        return list(
+            result.scalars().all()
+        )
+
+    async def get_page_visits_by_country(
+        self,
+        country_name: str,
+    ) -> list[PageVisited]:
+
+        result = await self.session.execute(
+            select(PageVisited)
+            .where(
+                func.lower(PageVisited.country_name) == country_name.lower()
+            )
+            .order_by(
+                PageVisited.created_at.desc()
+            )
+        )
+
+        return list(
+            result.scalars().all()
+        )
+
+    async def get_page_visits_by_page(
+        self,
+        page_name: str,
+    ) -> list[PageVisited]:
+
+        result = await self.session.execute(
+            select(PageVisited)
+            .where(
+                PageVisited.page_name == page_name
+            )
+            .order_by(
+                PageVisited.created_at.desc()
+            )
+        )
+        return list(
+            result.scalars().all()
+        )

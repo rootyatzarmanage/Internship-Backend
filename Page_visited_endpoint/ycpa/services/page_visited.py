@@ -7,6 +7,7 @@ from ycpa.repositories.page_visited import PageVisitedRepository
 from ycpa.services.analytics.ip_location import IPLocationService
 from ycpa.services.analytics.user_agent_parser import UserAgentParser
 from ycpa.schemas.requests.page_visited import PageVisitedRequest
+from ycpa.models.page_visited import PageVisited
 
 
 class PageVisitedService:
@@ -97,3 +98,24 @@ class PageVisitedService:
         )
 
         return page_visit
+
+    async def get_page_visits(
+        self,
+    ) -> list[PageVisited]:
+        return await self.repository.get_page_visits()
+
+    async def get_page_visits_by_country(
+        self,
+        country_name: str,
+    ) -> list[PageVisited]:
+        return await self.repository.get_page_visits_by_country(
+            country_name
+        )
+
+    async def get_page_visits_by_page(
+        self,
+        page_name: str,
+    ) -> list[PageVisited]:
+        return await self.repository.get_page_visits_by_page(
+            page_name
+        )
