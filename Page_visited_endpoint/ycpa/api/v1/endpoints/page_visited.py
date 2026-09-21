@@ -10,6 +10,7 @@ from ycpa.schemas.responses.page_visited import PageVisitedResponse
 from ycpa.services.page_visited import PageVisitedService
 from ycpa.core.schemas.responses import SuccessResponse
 from ycpa.core.schemas.responses import BaseResponse
+from ycpa.core.auth.dependencies import SuperAdminUser
 
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,7 @@ async def create_page_visited(
 )
 async def get_page_visits(
     session: DatabaseSession,
+    current_user: SuperAdminUser,
 ) -> BaseResponse[list[PageVisitedResponse]]:
 
     try:
@@ -138,6 +140,7 @@ async def get_page_visits(
 async def get_page_visits_by_country(
     country_name: str,
     session: DatabaseSession,
+    current_user: SuperAdminUser,
 ) -> BaseResponse[list[PageVisitedResponse]]:
 
     try:
@@ -192,6 +195,7 @@ async def get_page_visits_by_country(
 async def get_page_visits_by_page(
     page_name: str,
     session: DatabaseSession,
+    current_user: SuperAdminUser,
 ) -> BaseResponse[list[PageVisitedResponse]]:
 
     try:
