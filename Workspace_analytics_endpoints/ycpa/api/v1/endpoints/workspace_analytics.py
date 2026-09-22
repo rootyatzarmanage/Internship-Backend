@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Query
+from datetime import datetime
 
 from ycpa.core.auth.dependencies import CurrentUser
 from ycpa.core.database.dependencies import DatabaseSession
@@ -11,10 +12,12 @@ from ycpa.core.schemas.responses import (
 from ycpa.schemas.responses.workspace_analytics import (
     CountResponse,
     LatestMeetingResponse,
-    WorkspaceAnalyticsOverviewResponse
+    WorkspaceAnalyticsOverviewResponse,
+    RecentPaymentResponse
 )
 from ycpa.services.workspace_analytics import (
     WorkspaceAnalyticsService,
+    PaymentAnalyticsResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -222,5 +225,60 @@ async def get_workspace_analytics_overview(
     return SuccessResponse(
         success=True,
         message="Workspace analytics overview fetched successfully",
+        data=data,
+    )
+
+@router.get(
+    "/payments",
+    response_model=BaseResponse[PaymentAnalyticsResponse],
+    summary="Get payment analytics",
+)
+async def get_payment_analytics(
+    session: DatabaseSession,
+    current_user: CurrentUser,
+    year: int = Query(
+        default=datetime.now().year,
+        description="Payment analytics year",
+    ),
+) -> BaseResponse[PaymentAnalyticsResponse]:
+
+    service = WorkspaceAnalyticsService(session)
+
+    data = await service.get_payment_analytics(
+        user_id=current_user.id,
+        year=year,
+    )
+
+    return SuccessResponse(
+        success=True,
+        message="Payment analytics fetched successfully",
+        data=data,
+    )
+
+@router.get(
+    "/payments/recent",
+    response_model=BaseResponse[list[RecentPaymentResponse]],
+    summary="Get recent payments",
+)
+async def get_recent_payments(
+    session: DatabaseSession,
+    current_user: CurrentUser,
+    payment_limit: int = Query(
+        default=7,
+        ge=1,
+        le=50,
+    ),
+) -> BaseResponse[list[RecentPaymentResponse]]:
+
+    service = WorkspaceAnalyticsService(session)
+
+    data = await service.get_recent_payments(
+        user_id=current_user.id,
+        limit=payment_limit,
+    )
+
+    return SuccessResponse(
+        success=True,
+        message="Recent payments fetched successfully",
         data=data,
     )

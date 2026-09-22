@@ -192,4 +192,26 @@ class WorkspaceAnalyticsService(BaseService):
             monthly=monthly,
         )
 
-    
+    async def get_recent_payments(
+        self,
+        user_id: UUID,
+        limit: int = 7,
+    ) -> list[RecentPaymentResponse]:
+
+        payments = await self.repo.get_recent_payments(
+            user_id=user_id,
+            limit=limit,
+        )
+
+        return [
+            RecentPaymentResponse(
+                id=payment.id,
+                plan=payment.plan,
+                product_type=payment.product_type,
+                amount=payment.amount,
+                billing_period=payment.billing_period,
+                status=payment.status,
+                payment_date=payment.created_at,
+            )
+            for payment in payments
+        ]
