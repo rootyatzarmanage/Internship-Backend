@@ -86,4 +86,5 @@ __all__ = [
     "RolePermission",
     "Coupon",
     "UserPlatformPermission",
+    "order"
 ]

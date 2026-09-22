@@ -8,8 +8,11 @@ from ycpa.repositories.workspace_analytics import (
 )
 from ycpa.schemas.responses.workspace_analytics import (
     LatestMeetingResponse,
-    WorkspaceAnalyticsResponse,
-    WorkspaceOverviewResponse,
+    WorkspaceAnalyticsOverviewResponse,
+    DonutChartItem,
+    MonthlyPaymentResponse,
+    RecentPaymentResponse,
+    PaymentAnalyticsResponse
 )
 from ycpa.services.base import BaseService
 
@@ -23,24 +26,74 @@ class WorkspaceAnalyticsService(BaseService):
         super().__init__(session)
         self.repo = WorkspaceAnalyticsRepository(session)
 
-    async def get_dashboard(
+    async def get_workspace_count(
         self,
         user_id: UUID,
-        meeting_limit: int = 5,
-        meeting_search: str | None = None,
-    ) -> WorkspaceAnalyticsResponse:
+    ) -> int:
 
-        counts = await self.repo.get_workspace_counts(
+        return await self.repo.get_workspace_count(
             user_id=user_id,
         )
+
+    async def get_project_count(
+        self,
+        user_id: UUID,
+    ) -> int:
+
+        return await self.repo.get_project_count(
+            user_id=user_id,
+        )
+
+    async def get_pim_project_count(
+        self,
+        user_id: UUID,
+    ) -> int:
+
+        return await self.repo.get_pim_project_count(
+            user_id=user_id,
+        )
+
+    async def get_active_pim_project_count(
+        self,
+        user_id: UUID,
+    ) -> int:
+
+        return await self.repo.get_active_pim_project_count(
+            user_id=user_id,
+        )
+
+    async def get_aim_project_count(
+        self,
+        user_id: UUID,
+    ) -> int:
+
+        return await self.repo.get_aim_project_count(
+            user_id=user_id,
+        )
+
+    async def get_active_aim_project_count(
+        self,
+        user_id: UUID,
+    ) -> int:
+
+        return await self.repo.get_active_aim_project_count(
+            user_id=user_id,
+        )
+
+    async def get_latest_meetings(
+        self,
+        user_id: UUID,
+        limit: int = 5,
+        search: str | None = None,
+    ) -> list[LatestMeetingResponse]:
 
         meetings = await self.repo.get_latest_meetings(
             user_id=user_id,
-            limit=meeting_limit,
-            search=meeting_search,
+            limit=limit,
+            search=search,
         )
 
-        latest_meetings = [
+        return [
             LatestMeetingResponse(
                 id=meeting.id,
                 meeting_title=meeting.name,
@@ -56,9 +109,87 @@ class WorkspaceAnalyticsService(BaseService):
             for meeting in meetings
         ]
 
-        return WorkspaceAnalyticsResponse(
-            overview=WorkspaceOverviewResponse(
-                **counts
-            ),
-            latest_meetings=latest_meetings,
+    async def get_overview_chart(
+        self,
+        user_id: UUID,
+    ) -> WorkspaceAnalyticsOverviewResponse:
+
+        workspace_count = await self.get_workspace_count(
+            user_id=user_id,
         )
+
+        project_count = await self.get_project_count(
+            user_id=user_id,
+        )
+
+        pim_project_count = await self.get_pim_project_count(
+            user_id=user_id,
+        )
+
+        aim_project_count = await self.get_aim_project_count(
+            user_id=user_id,
+        )
+
+        return WorkspaceAnalyticsOverviewResponse(
+            items=[
+                DonutChartItem(
+                    label="No. of Workspace",
+                    value=workspace_count,
+                ),
+                DonutChartItem(
+                    label="No. of Projects",
+                    value=project_count,
+                ),
+                DonutChartItem(
+                    label="No. of PIM Projects",
+                    value=pim_project_count,
+                ),
+                DonutChartItem(
+                    label="No. of AIM Projects",
+                    value=aim_project_count,
+                ),
+            ],
+        )
+
+    async def get_payment_analytics(
+        self,
+        user_id: UUID,
+        year: int,
+    ) -> PaymentAnalyticsResponse:
+
+        payment_data = await self.repo.get_payment_analytics(
+            user_id=user_id,
+            year=year,
+        )
+
+        monthly = []
+        for month in range(1, 13):
+            data = payment_data["monthly"].get(
+                month,
+                {
+                    "pim": 0,
+                    "aim": 0,
+                },
+            )
+
+            pim_amount = data["pim"]
+            aim_amount = data["aim"]
+
+            monthly.append(
+                MonthlyPaymentResponse(
+                    month=month,
+                    pim_amount=pim_amount,
+                    aim_amount=aim_amount,
+                    total_amount=(
+                        pim_amount + aim_amount
+                    ),
+                )
+            )
+
+        return PaymentAnalyticsResponse(
+            year=payment_data["year"],
+            total_amount=payment_data["total_amount"],
+            monthly=monthly,
+        )
+
+    

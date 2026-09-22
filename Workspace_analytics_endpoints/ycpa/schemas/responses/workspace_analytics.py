@@ -1,16 +1,18 @@
 from uuid import UUID
+from datetime import datetime
 
 from pydantic import BaseModel
 
 
-class WorkspaceOverviewResponse(BaseModel):
-    workspace_count: int
-    project_count: int
-    pim_project_count: int
-    pim_active_project_count: int
-    aim_project_count: int
-    aim_active_project_count: int
+class CountResponse(BaseModel):
+    count: int
 
+class DonutChartItem(BaseModel):
+    label : str
+    value : int
+
+class WorkspaceAnalyticsOverviewResponse(BaseModel):
+    items : list[DonutChartItem]
 
 class LatestMeetingResponse(BaseModel):
     id: UUID
@@ -21,7 +23,24 @@ class LatestMeetingResponse(BaseModel):
     groups: int
     status: str
 
+class MonthlyPaymentResponse(BaseModel):
+    month: int
+    pim_amount: int
+    aim_amount: int
+    total_amount: int
 
-class WorkspaceAnalyticsResponse(BaseModel):
-    overview: WorkspaceOverviewResponse
-    latest_meetings: list[LatestMeetingResponse]
+
+class PaymentAnalyticsResponse(BaseModel):
+    year: int
+    total_amount: int
+    monthly: list[MonthlyPaymentResponse]
+
+
+class RecentPaymentResponse(BaseModel):
+    id: UUID
+    plan: str
+    product_type: str
+    amount: int
+    billing_period: str
+    status: str
+    payment_date: datetime
