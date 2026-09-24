@@ -92,22 +92,31 @@ class WorkspaceAnalyticsService(BaseService):
             limit=limit,
             search=search,
         )
-
-        return [
-            LatestMeetingResponse(
-                id=meeting.id,
-                meeting_title=meeting.name,
-                description=meeting.description,
-                date=meeting.date,
-                members=(
-                    (meeting.member_ids or 0)
-                    + (meeting.custom_members or 0)
-                ),
-                groups=meeting.group_ids or 0,
-                status=meeting.status,
+        response = []
+        for meeting in meetings:
+            meeting_date = ""
+            meeting_time = ""
+            if meeting.date:
+                parts = meeting.date.split(",", 1)
+                meeting_date = parts[0].strip()
+                if len(parts) > 1:
+                    meeting_time = parts[1].strip()
+            response.append(
+                LatestMeetingResponse(
+                    id=meeting.id,
+                    meeting_title=meeting.name,
+                    description=meeting.description,
+                    date=meeting_date,
+                    time=meeting_time,
+                    members=(
+                        (meeting.member_ids or 0)
+                        + (meeting.custom_members or 0)
+                    ),
+                    groups=meeting.group_ids or 0,
+                    status=meeting.status,
+                )
             )
-            for meeting in meetings
-        ]
+        return response
 
     async def get_overview_chart(
         self,
@@ -208,6 +217,7 @@ class WorkspaceAnalyticsService(BaseService):
                 id=payment.id,
                 plan=payment.plan,
                 product_type=payment.product_type,
+                payment_method = payment.payment_method,
                 amount=payment.amount,
                 billing_period=payment.billing_period,
                 status=payment.status,

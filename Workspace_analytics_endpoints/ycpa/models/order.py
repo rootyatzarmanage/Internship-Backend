@@ -19,6 +19,8 @@ class Order(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     razorpay_order_id: Mapped[str] = mapped_column(Text, unique=True, nullable=False, index=True)
     razorpay_payment_id: Mapped[str | None] = mapped_column(Text, nullable=True, index=True)
+    transaction_id: Mapped[str | None] = mapped_column(Text, nullable=True, index=True)
+    payment_method: Mapped[str | None] = mapped_column(Text, nullable=True)
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(Text, default="INR", nullable=False)
     status: Mapped[str] = mapped_column(Text, default="created", nullable=False)
@@ -30,4 +32,3 @@ class Order(Base):
 
     def __repr__(self):
         return f"<Order user_id={self.user_id} razorpay_order_id={self.razorpay_order_id} status={self.status}>"
- 

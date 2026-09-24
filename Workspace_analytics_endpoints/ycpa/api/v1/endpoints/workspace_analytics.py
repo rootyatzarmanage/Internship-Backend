@@ -11,6 +11,7 @@ from ycpa.core.schemas.responses import (
 )
 from ycpa.schemas.responses.workspace_analytics import (
     CountResponse,
+    ProjectCountResponse,
     LatestMeetingResponse,
     WorkspaceAnalyticsOverviewResponse,
     RecentPaymentResponse
@@ -77,98 +78,53 @@ async def get_project_count(
     )
 
 @router.get(
-    "/pim-projects_count",
-    response_model=BaseResponse[CountResponse],
-    summary="Get total number of PIM projects",
+        "/pim-projects_count",
+        response_model=BaseResponse[ProjectCountResponse],
+        summary="Get PIM project counts",
 )
 async def get_pim_project_count(
-    session: DatabaseSession,
-    current_user: CurrentUser,
-) -> BaseResponse[CountResponse]:
-
+    session : DatabaseSession,
+    current_user : CurrentUser,
+)-> BaseResponse[ProjectCountResponse]:
     service = WorkspaceAnalyticsService(session)
-
-    count = await service.get_pim_project_count(
-        user_id=current_user.id,
+    total_count = await service.get_pim_project_count(
+        user_id=current_user.id
     )
-
+    active_count = await service.get_active_pim_project_count(
+        user_id=current_user.id
+    )
     return SuccessResponse(
-        success=True,
-        message="PIM project count fetched successfully",
-        data=CountResponse(
-            count=count,
-        ),
-    )
-
-@router.get(
-    "/pim-projects/active_count",
-    response_model=BaseResponse[CountResponse],
-    summary="Get active PIM project count",
-)
-async def get_active_pim_project_count(
-    session: DatabaseSession,
-    current_user: CurrentUser,
-) -> BaseResponse[CountResponse]:
-
-    service = WorkspaceAnalyticsService(session)
-
-    count = await service.get_active_pim_project_count(
-        user_id=current_user.id,
-    )
-
-    return SuccessResponse(
-        success=True,
-        message="Active PIM project count fetched successfully",
-        data=CountResponse(
-            count=count,
-        ),
+        success = True,
+        message = "PIM Project count fetched successfully",
+        data = ProjectCountResponse(
+            total_count= total_count,
+            active_count= active_count
+        )
     )
 
 @router.get(
     "/aim-projects_count",
-    response_model=BaseResponse[CountResponse],
-    summary="Get total number of AIM projects",
+    response_model=BaseResponse[ProjectCountResponse],
+    summary="Get AIM projects counts",
 )
 async def get_aim_project_count(
     session: DatabaseSession,
     current_user: CurrentUser,
-) -> BaseResponse[CountResponse]:
+) -> BaseResponse[ProjectCountResponse]:
 
     service = WorkspaceAnalyticsService(session)
-
-    count = await service.get_aim_project_count(
+    total_count = await service.get_aim_project_count(
         user_id=current_user.id,
     )
-
+    active_count = await service.get_active_aim_project_count(
+        user_id= current_user.id
+    )
     return SuccessResponse(
         success=True,
         message="AIM project count fetched successfully",
-        data=CountResponse(
-            count=count,
-        ),
-    )
-
-@router.get(
-    "/aim-projects/active_count",
-    response_model=BaseResponse[CountResponse],
-    summary="Get active AIM project count",
-)
-async def get_active_aim_project_count(
-    session: DatabaseSession,
-    current_user: CurrentUser,
-) -> BaseResponse[CountResponse]:
-
-    service = WorkspaceAnalyticsService(session)
-
-    count = await service.get_active_aim_project_count(
-        user_id=current_user.id,
-    )
-
-    return SuccessResponse(
-        success=True,
-        message="Active AIM project count fetched successfully",
-        data=CountResponse(
-            count=count,
+        data=ProjectCountResponse(
+            total_count = total_count,
+            active_count = active_count
         ),
     )
 
