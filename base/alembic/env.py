@@ -43,6 +43,7 @@ from ycpa.models import (
     RolePermission,
     PimScopeDiscipline,
     PimScopeItem,
+    orders
 )
 
 config = context.config
