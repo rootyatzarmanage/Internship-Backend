@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ycpa.models.workspace import PimWorkspace  
 from ycpa.repositories.workspace_overview import (
     WorkspaceOverviewRepository,
 )
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class WorkspaceOverviewService(BaseService):
 
-    def __init__(self,session: AsyncSession):
+    def __init__(self, session: AsyncSession):
         super().__init__(session)
         self.repo = WorkspaceOverviewRepository(session)
 
@@ -39,17 +40,17 @@ class WorkspaceOverviewService(BaseService):
         workspaces = []
 
         for item in workspace_data:
-
             workspace = item["workspace"]
+            resolved_type = "PIM" if isinstance(workspace, PimWorkspace) else "AIM"
+            
             projects = []
             for project in item["projects"]:
-
                 projects.append(
                     WorkspaceProjectResponse(
                         id=project.id,
                         name=project.name,
                         description=project.description,
-                        project_type=item["workspace_type"],
+                        project_type=resolved_type,  
                         created_at=(
                             project.created_at.date()
                             if project.created_at
@@ -62,7 +63,6 @@ class WorkspaceOverviewService(BaseService):
                 WorkspaceOverviewItemResponse(
                     id=workspace.id,
                     name=workspace.name,
-                    workspace_type=item["workspace_type"],
                     role=item["role"],
                     project_count=len(projects),
                     projects=projects,

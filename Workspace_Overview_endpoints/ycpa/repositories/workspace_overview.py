@@ -1,6 +1,6 @@
 import logging
 from uuid import UUID
-from sqlalchemy import or_,select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ycpa.models.workspace import (
@@ -15,16 +15,17 @@ from ycpa.models.workspace import (
 logger = logging.getLogger(__name__)
 
 class WorkspaceOverviewRepository:
-    def __init__(self,session:AsyncSession):
+    def __init__(self, session: AsyncSession):
         self.session = session
+
     async def get_workspaces( 
         self,
-        user_id : UUID,
-        filter_type : str = "all"
-    )-> list[dict]:
-        workspaces=[] 
-        pim_owner_query =  select(PimWorkspace).where(
-            PimWorkspace.owner_id  == user_id,
+        user_id: UUID,
+        filter_type: str = "all"
+    ) -> list[dict]:
+        workspaces = [] 
+        pim_owner_query = select(PimWorkspace).where(
+            PimWorkspace.owner_id == user_id,
             PimWorkspace.deleted_at.is_(None)
         )
         pim_shared_query = (select(PimWorkspace).join(
@@ -58,16 +59,14 @@ class WorkspaceOverviewRepository:
                workspaces.append(
                    {
                        "workspace": workspace,
-                       "workspace_type" : "PIM",
-                       "role" : "owner"
+                       "role": "owner"
                    }
                )
             for workspace in aim_workspaces:
                 workspaces.append(
                     {
-                        "workspace" : workspace,
-                        "workspace_type" : "AIM",
-                        "role" : "owner"
+                        "workspace": workspace,
+                        "role": "owner"
                     }
                 )
 
@@ -81,7 +80,6 @@ class WorkspaceOverviewRepository:
                 workspaces.append(
                     {
                         "workspace": workspace,
-                        "workspace_type": "PIM",
                         "role": "member",
                     }
                 )
@@ -90,7 +88,6 @@ class WorkspaceOverviewRepository:
                 workspaces.append(
                     {
                         "workspace": workspace,
-                        "workspace_type": "AIM",
                         "role": "member",
                     }
                 )
@@ -107,7 +104,6 @@ class WorkspaceOverviewRepository:
                 workspaces.append(
                     {
                         "workspace": workspace,
-                        "workspace_type": "PIM",
                         "role": "owner",
                     }
                 )
@@ -115,7 +111,6 @@ class WorkspaceOverviewRepository:
                 workspaces.append(
                     {
                         "workspace": workspace,
-                        "workspace_type": "PIM",
                         "role": "member",
                     }
                 )
@@ -123,7 +118,6 @@ class WorkspaceOverviewRepository:
                 workspaces.append(
                     {
                         "workspace": workspace,
-                        "workspace_type": "AIM",
                         "role": "owner",
                     }
                 )
@@ -131,7 +125,6 @@ class WorkspaceOverviewRepository:
                 workspaces.append(
                     {
                         "workspace": workspace,
-                        "workspace_type": "AIM",
                         "role": "member",
                     }
                 )
@@ -145,48 +138,34 @@ class WorkspaceOverviewRepository:
         result = []
 
         for item in workspaces:
-
             workspace = item["workspace"]
-            workspace_type = item["workspace_type"]
 
-            if workspace_type == "PIM":
-
+            # Dynamically infer the type based on the SQLAlchemy model class
+            if isinstance(workspace, PimWorkspace):
                 project_query = (
                     select(PimProject)
                     .where(
-                        PimProject.workspace_id
-                        == workspace.id,
+                        PimProject.workspace_id == workspace.id,
                         PimProject.deleted_at.is_(None),
                     )
-                    .order_by(
-                        PimProject.created_at.desc()
-                    )
+                    .order_by(PimProject.created_at.desc())
                 )
-
             else:
-
                 project_query = (
                     select(AimProject)
                     .where(
-                        AimProject.workspace_id
-                        == workspace.id,
+                        AimProject.workspace_id == workspace.id,
                         AimProject.deleted_at.is_(None),
                     )
-                    .order_by(
-                        AimProject.created_at.desc()
-                    )
+                    .order_by(AimProject.created_at.desc())
                 )
 
-            project_result = await self.session.execute(
-                project_query
-            )
-
+            project_result = await self.session.execute(project_query)
             projects = project_result.scalars().all()
 
             result.append(
                 {
                     "workspace": workspace,
-                    "workspace_type": workspace_type,
                     "role": item["role"],
                     "projects": projects,
                 }

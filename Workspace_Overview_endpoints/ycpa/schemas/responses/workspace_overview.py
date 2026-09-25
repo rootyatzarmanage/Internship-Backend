@@ -14,7 +14,6 @@ class WorkspaceProjectResponse(BaseModel):
 class WorkspaceOverviewItemResponse(BaseModel):
     id: UUID
     name: str
-    workspace_type: str
     role: str
     project_count: int
     projects: list[WorkspaceProjectResponse]
