@@ -1,7 +1,7 @@
 import logging
-from datetime import date
+from datetime import date, timedelta
 
-from sqlalchemy import or_, select
+from sqlalchemy import String, cast, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ycpa.models.order import Order
@@ -27,28 +27,30 @@ class AdminPaymentRepository:
         payment_method: str | None = None,
     ) -> list[tuple[Order, User]]:
 
-        query = (select(
+        query = (
+            select(
                 Order,
                 User,
-            ).join(
+            )
+            .join(
                 User,
                 User.id == Order.user_id,
-            ).where(
+            )
+            .where(
                 User.deleted_at.is_(None),
             )
         )
-
         if search:
             search_value = search.strip()
 
             search_conditions = [
-                User.id.cast(str).ilike(
+                cast(User.id, String).ilike(
                     f"%{search_value}%"
                 ),
                 Order.plan.ilike(
                     f"%{search_value}%"
                 ),
-                Order.amount.cast(str).ilike(
+                cast(Order.amount, String).ilike(
                     f"%{search_value}%"
                 ),
             ]
@@ -60,20 +62,16 @@ class AdminPaymentRepository:
             query = query.where(
                 Order.created_at >= start_date
             )
-
         if end_date:
-            query = query.where(
-                Order.created_at
-                < end_date.fromordinal(
-                    end_date.toordinal() + 1
-                )
-            )
+            next_day = end_date + timedelta(days=1)
 
+            query = query.where(
+                Order.created_at < next_day
+            )
         if payment_status:
             query = query.where(
                 Order.status.ilike(payment_status)
             )
-
         if payment_method:
             query = query.where(
                 Order.payment_method.ilike(payment_method)
@@ -81,7 +79,5 @@ class AdminPaymentRepository:
         query = query.order_by(
             Order.created_at.desc()
         )
-
         result = await self.session.execute(query)
-
         return result.all()
