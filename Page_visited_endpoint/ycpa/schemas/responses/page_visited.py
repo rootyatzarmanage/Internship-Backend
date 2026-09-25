@@ -40,3 +40,44 @@ class PageVisitedFilterResponse(BaseModel):
 class PageVisitedFilterOptionsResponse(BaseModel):
     countries: list[str]
     pages: list[str]
+
+class MetricResponse(BaseModel):
+    value: int | float
+
+class MetricComparisonResponse(BaseModel):
+    value: float
+    percentage_change: float
+
+class UniqueVisitorsResponse(MetricComparisonResponse):
+    pass
+
+
+class TotalPageViewsResponse(MetricComparisonResponse):
+    pass
+
+
+class AverageVisitingTimeResponse(MetricComparisonResponse):
+    pass
+
+
+class AcquisitionChannelItem(BaseModel):
+    channel: str
+    count: int
+
+
+class AcquisitionChannelMonthResponse(BaseModel):
+    month: str
+    channels: list[AcquisitionChannelItem]
+
+
+class AcquisitionChannelResponse(BaseModel):
+    months: list[AcquisitionChannelMonthResponse]
+
+class DeviceSessionItem(BaseModel):
+    device : str
+    sessions : int
+
+class DeviceSessionResponse(BaseModel):
+    devices : list[DeviceSessionItem]
+
+
