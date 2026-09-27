@@ -1,7 +1,7 @@
 import logging
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
-from sqlalchemy import String, cast, or_, select
+from sqlalchemy import String, cast, or_, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ycpa.models.order import Order
@@ -79,5 +79,158 @@ class AdminPaymentRepository:
         query = query.order_by(
             Order.created_at.desc()
         )
+        result = await self.session.execute(query)
+        return result.all()
+
+    async def get_total_revenue(self) -> float:
+
+        query = select(
+            func.coalesce(
+                func.sum(Order.amount),
+                0,
+            )
+        ).where(
+            func.lower(Order.status) == "success"
+        )
+
+        result = await self.session.execute(query)
+        return float(result.scalar() or 0)
+
+    async def get_revenue_between(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> float:
+
+        query = select(
+            func.coalesce(
+                func.sum(Order.amount),
+                0,
+            )
+        ).where(
+            func.lower(Order.status) == "success",
+            Order.created_at >= start_date,
+            Order.created_at < end_date,
+        )
+
+        result = await self.session.execute(query)
+        return float(result.scalar() or 0)
+    
+    async def get_total_transactions(self) -> int:
+
+        query = select(func.count(Order.id))
+
+        result = await self.session.execute(query)
+        return int(result.scalar() or 0)
+
+    async def get_transactions_between(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> int:
+
+        query = select(
+            func.count(Order.id)
+        ).where(
+            Order.created_at >= start_date,
+            Order.created_at < end_date,
+        )
+
+        result = await self.session.execute(query)
+        return int(result.scalar() or 0)
+    
+    async def get_successful_payments(self) -> int:
+
+        query = select(func.count(Order.id)).where(
+            func.lower(Order.status) == "success"
+        )
+
+        result = await self.session.execute(query)
+        return int(result.scalar() or 0)
+
+    async def get_successful_payments_between(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> int:
+
+        query = select(func.count(Order.id)).where(
+            func.lower(Order.status) == "success",
+            Order.created_at >= start_date,
+            Order.created_at < end_date,
+        )
+
+        result = await self.session.execute(query)
+        return int(result.scalar() or 0)
+
+    async def get_monthly_transactions(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> int:
+
+        query = select(
+            func.count(Order.id)
+        ).where(
+            Order.created_at >= start_date,
+            Order.created_at < end_date,
+        )
+
+        result = await self.session.execute(query)
+        return int(result.scalar() or 0)
+
+    async def get_yearly_revenue(
+        self,
+        year: int,
+    ) -> list:
+
+        query = select(
+            func.extract(
+                "month",
+                Order.created_at,
+            ).label("month"),
+
+            Order.product_type,
+
+            func.coalesce(
+                func.sum(Order.amount),
+                0,
+            ).label("revenue"),
+        ).where(
+            func.extract(
+                "year",
+                Order.created_at,
+            ) == year,
+
+            func.lower(Order.status) == "success",
+        ).group_by(
+            func.extract(
+                "month",
+                Order.created_at,
+            ),
+            Order.product_type,
+        ).order_by(
+            func.extract(
+                "month",
+                Order.created_at,
+            )
+        )
+
+        result = await self.session.execute(query)
+        return result.all()
+
+    async def get_payment_methods(self) -> list:
+
+        query = select(
+            Order.payment_method,
+            func.count(Order.id).label("count"),
+        ).where(
+            Order.payment_method.is_not(None),
+        ).group_by(
+            Order.payment_method,
+        ).order_by(
+            func.count(Order.id).desc(),
+        )
+
         result = await self.session.execute(query)
         return result.all()

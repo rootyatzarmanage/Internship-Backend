@@ -37,3 +37,39 @@ class AdminPaymentItemResponse(BaseModel):
 class AdminPaymentResponse(BaseModel):
     items: list[AdminPaymentItemResponse]
     total: int
+
+class PaymentMetricResponse(BaseModel):
+    value: float
+    percentage_change: float
+
+
+class SuccessfulPaymentResponse(BaseModel):
+    value: int
+    percentage_change: float
+
+
+class MonthlyTransactionResponse(BaseModel):
+    value: int
+    percentage_change: float
+
+
+class YearlyRevenueItem(BaseModel):
+    month: str
+    pim_project: float
+    aim_project: float
+    pim_aim_project: float
+
+
+class YearlyRevenueResponse(BaseModel):
+    year: int
+    total_revenue: float
+    months: list[YearlyRevenueItem]
+
+
+class PaymentMethodItem(BaseModel):
+    payment_method: str
+    count: int
+
+
+class PaymentMethodResponse(BaseModel):
+    payment_methods: list[PaymentMethodItem]
