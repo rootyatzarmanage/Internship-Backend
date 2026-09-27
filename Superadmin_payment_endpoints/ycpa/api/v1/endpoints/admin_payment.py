@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from ycpa.core.auth.dependencies import SuperAdminUser
 from ycpa.core.database.dependencies import DatabaseSession
-from ycpa.core.schemas.responses import SuccessResponse, BaseResponse
+from ycpa.core.schemas.responses import SuccessResponse
 
 from ycpa.repositories.admin_payment import AdminPaymentRepository
 
@@ -146,14 +146,14 @@ async def get_admin_payments(
 
 @router.get(
     "/total_revenue",
-    response_model=BaseResponse[PaymentMetricResponse],
+    response_model=SuccessResponse[PaymentMetricResponse],
     status_code=status.HTTP_200_OK,
     summary="Get total revenue",
 )
 async def get_total_revenue(
     session: DatabaseSession,
     current_user: SuperAdminUser,
-) -> BaseResponse[PaymentMetricResponse]:
+) -> SuccessResponse[PaymentMetricResponse]:
 
     try:
         repository = AdminPaymentRepository(session)
@@ -193,14 +193,14 @@ async def get_total_revenue(
 
 @router.get(
     "/total_transactions",
-    response_model=BaseResponse[PaymentMetricResponse],
+    response_model=SuccessResponse[PaymentMetricResponse],
     status_code=status.HTTP_200_OK,
     summary="Get total transactions",
 )
 async def get_total_transactions(
     session: DatabaseSession,
     current_user: SuperAdminUser,
-) -> BaseResponse[PaymentMetricResponse]:
+) -> SuccessResponse[PaymentMetricResponse]:
 
     try:
         repository = AdminPaymentRepository(session)
@@ -239,14 +239,14 @@ async def get_total_transactions(
 
 @router.get(
     "/successful_payments",
-    response_model=BaseResponse[SuccessfulPaymentResponse],
+    response_model=SuccessResponse[SuccessfulPaymentResponse],
     status_code=status.HTTP_200_OK,
     summary="Get successful payments",
 )
 async def get_successful_payments(
     session: DatabaseSession,
     current_user: SuperAdminUser,
-) -> BaseResponse[SuccessfulPaymentResponse]:
+) -> SuccessResponse[SuccessfulPaymentResponse]:
 
     try:
         repository = AdminPaymentRepository(session)
@@ -286,14 +286,14 @@ async def get_successful_payments(
 
 @router.get(
     "/monthly_transaction",
-    response_model=BaseResponse[MonthlyTransactionResponse],
+    response_model=SuccessResponse[MonthlyTransactionResponse],
     status_code=status.HTTP_200_OK,
     summary="Get current monthly transactions",
 )
 async def get_monthly_transaction(
     session: DatabaseSession,
     current_user: SuperAdminUser,
-) -> BaseResponse[MonthlyTransactionResponse]:
+) -> SuccessResponse[MonthlyTransactionResponse]:
 
     try:
         repository = AdminPaymentRepository(session)
@@ -333,7 +333,7 @@ async def get_monthly_transaction(
 
 @router.get(
     "/yearly_revenue",
-    response_model=BaseResponse[YearlyRevenueResponse],
+    response_model=SuccessResponse[YearlyRevenueResponse],
     status_code=status.HTTP_200_OK,
     summary="Get yearly revenue statistics",
 )
@@ -344,7 +344,7 @@ async def get_yearly_revenue(
         ...,
         description="Revenue year",
     ),
-) -> BaseResponse[YearlyRevenueResponse]:
+) -> SuccessResponse[YearlyRevenueResponse]:
 
     try:
         repository = AdminPaymentRepository(session)
@@ -388,14 +388,14 @@ async def get_yearly_revenue(
 
 @router.get(
     "/payment_methods",
-    response_model=BaseResponse[PaymentMethodResponse],
+    response_model=SuccessResponse[PaymentMethodResponse],
     status_code=status.HTTP_200_OK,
     summary="Get payment method distribution",
 )
 async def get_payment_methods(
     session: DatabaseSession,
     current_user: SuperAdminUser,
-) -> BaseResponse[PaymentMethodResponse]:
+) -> SuccessResponse[PaymentMethodResponse]:
 
     try:
         repository = AdminPaymentRepository(session)
