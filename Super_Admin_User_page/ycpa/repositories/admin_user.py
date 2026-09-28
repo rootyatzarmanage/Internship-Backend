@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone,date
 from uuid import UUID
 
 from sqlalchemy import (
@@ -129,6 +129,12 @@ class AdminUserRepository:
     async def get_users(
         self,
         search: str | None = None,
+        name: str | None = None,
+        email: str | None = None,
+        verified: bool | None = None,
+        status: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
         limit: int = 6,
         offset: int = 0,
     ):
@@ -342,8 +348,7 @@ class AdminUserRepository:
                 "Deactive",
             ),
             (
-                latest_auth_action
-                == "USER_LOGIN",
+                latest_auth_action == "USER_LOGIN",
                 "Active",
             ),
             else_="Offline",
@@ -357,12 +362,8 @@ class AdminUserRepository:
             User.email_verified,
             User.last_login_at,
             User.created_at,
-            workspace_count.label(
-                "workspace_count"
-            ),
-            project_count.label(
-                "project_count"
-            ),
+            workspace_count.label("workspace_count"),
+            project_count.label("project_count"),
             user_status,
         ).where(
             User.deleted_at.is_(None)
@@ -389,6 +390,39 @@ class AdminUserRepository:
                     ),
                 )
             )
+        if name:
+            query = query.where(
+                User.full_name.ilike(
+                    f"%{name.strip()}%"
+                )
+            )
+
+        if email:
+            query = query.where(
+                User.email.ilike(
+                    f"%{email.strip()}%"
+                )
+            )
+
+        if verified is not None:
+            query = query.where(
+                User.email_verified.is_(verified)
+            )
+
+        if status:
+            query = query.where(
+                user_status == status
+            )
+        if start_date:
+            query = query.where(
+            User.created_at >= start_date
+        )
+        if end_date:
+            query = query.where(
+                User.created_at < end_date.fromordinal(
+                end_date.toordinal() + 1
+            )
+        )
 
         query = (
             query
@@ -405,14 +439,54 @@ class AdminUserRepository:
     async def count_users(
         self,
         search: str | None = None,
+        name: str | None = None,
+        email: str | None = None,
+        verified: bool | None = None,
+        status: str | None = None,
     ) -> int:
+        latest_auth_action = (
+            select(AuditLog.action)
+            .where(
+                AuditLog.user_id == User.id,
+                AuditLog.action.in_(
+                    [
+                        "USER_LOGIN",
+                        "USER_LOGOUT",
+                    ]
+                ),
+            )
+            .order_by(
+                AuditLog.created_at.desc()
+            )
+            .limit(1)
+            .correlate(User)
+            .scalar_subquery()
+        )
 
-        query = select(func.count(User.id)).where(
+        user_status = case(
+            (
+                or_(
+                    User.is_active.is_(False),
+                    User.deactivated_at.is_not(None),
+                ),
+                "Deactive",
+            ),
+            (
+                latest_auth_action == "USER_LOGIN",
+                "Active",
+            ),
+            else_="Offline",
+        )
+
+        query = select(
+            func.count(User.id)
+        ).where(
             User.deleted_at.is_(None)
         )
 
         if search:
             search_value = search.strip()
+
             query = query.where(
                 or_(
                     cast(
@@ -421,16 +495,37 @@ class AdminUserRepository:
                     ).ilike(
                         f"%{search_value}%"
                     ),
-
                     User.full_name.ilike(
                         f"%{search_value}%"
                     ),
-
                     User.email.ilike(
                         f"%{search_value}%"
                     ),
                 )
             )
+
+        if name:
+            query = query.where(
+                User.full_name.ilike(
+                    f"%{name.strip()}%"
+                )
+            )
+
+        if email:
+            query = query.where(
+                User.email.ilike(
+                    f"%{email.strip()}%"
+                )
+            )
+
+        if verified is not None:
+            query = query.where(
+                User.email_verified.is_(verified)
+            )
+
+        if status:
+            query = query.where(user_status == status)
+
         result = await self.session.execute(query)
         return int(result.scalar() or 0)
 

@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime, timezone
+from datetime import datetime, timezone,date
 
 from ycpa.repositories.admin_user import AdminUserRepository
 
@@ -250,63 +250,64 @@ class AdminUserService:
         }
 
     async def get_users(
-        self,
-        search: str | None = None,
-        page: int = 1,
-        limit: int = 6,
+            self,
+            search: str | None = None,
+            name: str | None = None,
+            email: str | None = None,
+            verified: bool | None = None,
+            status: str | None = None,
+            start_date: date | None = None,
+            end_date: date | None = None,
+            page: int = 1,
+            limit: int = 6,
     ):
-
         if page < 1:
             page = 1
-
         if limit < 1:
             limit = 6
 
-        offset = (
-            (page - 1)
-            * limit
+        offset = (page - 1) * limit
+
+        rows = await self.repository.get_users(
+            search=search,
+            name=name,
+            email=email,
+            verified=verified,
+            status=status,
+            limit=limit,
+            start_date=start_date,
+            end_date=end_date,
+            offset=offset,
         )
 
-        rows = (
-            await self.repository
-            .get_users(
-                search=search,
-                limit=limit,
-                offset=offset,
-            )
-        )
-
-        total = (
-            await self.repository
-            .count_users(
-                search=search
-            )
+        total = await self.repository.count_users(
+            search=search,
+            name=name,
+            email=email,
+            verified=verified,
+            status=status,
         )
 
         items = []
-
         for row in rows:
-
             items.append(
-                {
+                    {
                     "user_id": str(row.id),
                     "name": row.full_name,
                     "email": row.email,
                     "phone_number": row.phone,
                     "workspace_count": int(
-                        row.workspace_count
-                        or 0
+                        row.workspace_count or 0
                     ),
                     "projects": int(
-                        row.project_count
-                        or 0
+                        row.project_count or 0
                     ),
                     "status": row.status,
                     "verified": bool(row.email_verified),
                     "last_login": row.last_login_at,
                     "registered": row.created_at,
-                }
-            )
+                    }
+                )
 
         return {
             "items": items,

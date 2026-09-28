@@ -1,4 +1,6 @@
 import logging
+from enum import Enum
+from datetime import date
 
 from fastapi import APIRouter,HTTPException,Query,status
 from ycpa.core.auth.dependencies import SuperAdminUser
@@ -6,6 +8,7 @@ from ycpa.core.database.dependencies import DatabaseSession
 from ycpa.core.schemas.responses import SuccessResponse
 from ycpa.repositories.admin_user import AdminUserRepository
 from ycpa.services.admin_user import AdminUserService
+from ycpa.schemas.requests.admin_user import UserStatus
 from ycpa.schemas.responses.admin_user import (
     UserMetricResponse,
     AdminUserItem,
@@ -185,35 +188,52 @@ async def get_new_signups(
         )
 
 @router.get(
-    "/users",
-    response_model=SuccessResponse[
-        AdminUserListResponse
-    ],
+    "/users_list",
+    response_model=SuccessResponse[AdminUserListResponse],
     status_code=status.HTTP_200_OK,
     summary="Get admin user list",
 )
-async def get_users(
+async def get_admin_users(
     session: DatabaseSession,
     current_user: SuperAdminUser,
-
     search: str | None = Query(
         None,
-        description=(
-            "Search by User ID, name, or email"
-        ),
+        description="Search by User ID, name, or email",
     ),
-
+    name: str | None = Query(
+        None,
+        description="Filter by user name",
+    ),
+    email: str | None = Query(
+        None,
+        description="Filter by email",
+    ),
+    verified: bool | None = Query(
+        None,
+        description="Filter by verified status",
+    ),
+    user_status: UserStatus | None = Query(
+        None,
+        alias="status",
+        description="Filter by user status",
+    ),
+    start_date: date | None = Query(
+        None,
+        description="Filter users registered from this date",
+    ),
+    end_date: date | None = Query(
+        None,
+        description="Filter users registered up to this date",
+    ),
     page: int = Query(
         1,
         ge=1,
     ),
-
     limit: int = Query(
         6,
         ge=1,
         le=100,
     ),
-
 ) -> SuccessResponse[AdminUserListResponse]:
 
     try:
@@ -221,25 +241,53 @@ async def get_users(
         service = AdminUserService(repository)
         data = await service.get_users(
             search=search,
+            name=name,
+            email=email,
+            verified=verified,
+            status=(
+                user_status.value
+                if user_status
+                else None
+            ),
+            start_date = start_date,
+            end_date = end_date,
             page=page,
             limit=limit,
         )
 
+        logger.info(
+            "User list fetched successfully",
+            extra={
+                "search": search,
+                "name": name,
+                "email": email,
+                "verified": verified,
+                "status": (
+                    user_status.value
+                    if user_status
+                    else None
+                ),
+                "start_date": (
+                    str(start_date)
+                    if start_date
+                    else None
+                ),
+                "end_date": (
+                    str(end_date)
+                    if end_date
+                    else None
+                ),
+                "page": page,
+                "limit": limit,
+                "total": data["total"],
+            },
+        )
+
         return SuccessResponse(
             success=True,
-            message=(
-                "User list fetched successfully"
-            ),
+            message="User list fetched successfully",
             data=AdminUserListResponse(
-                items=[
-                    AdminUserItem(
-                        **item
-                    )
-                    for item in data["items"]
-                ],
-                total=data["total"],
-                page=data["page"],
-                limit=data["limit"],
+                **data
             ),
         )
 
@@ -247,21 +295,36 @@ async def get_users(
         raise
 
     except Exception:
-
         logger.exception(
             "Failed to fetch admin user list",
             extra={
                 "search": search,
+                "name": name,
+                "email": email,
+                "verified": verified,
+                "status": (
+                    user_status.value
+                    if user_status
+                    else None
+                ),
+                "start_date": (
+                    str(start_date)
+                    if start_date
+                    else None
+                ),
+                "end_date": (
+                    str(end_date)
+                    if end_date
+                    else None
+                ),
                 "page": page,
                 "limit": limit,
             },
         )
 
         raise HTTPException(
-            status_code=500,
-            detail=(
-                "Failed to fetch user list."
-            ),
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch user list.",
         )
 
 @router.get(
