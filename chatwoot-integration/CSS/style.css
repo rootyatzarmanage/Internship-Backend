@@ -1,4 +1,4 @@
-    *,
+                                                                                                                                                                                                                                *,
     *::before,
     *::after {
         box-sizing: border-box;
@@ -19,7 +19,7 @@
         --font-size-h2: 2.25rem;
         --font-size-h3: 1.25rem;
         --font-size-h4: 1.15rem;
-        --font-size-body: 1rem;
+        --font-size-body: 1rem;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
         --font-social-size: 1.75rem;
         --primary-color: #131920;
         --secondary-color: #1A222B;
@@ -477,6 +477,27 @@
         padding-left: 2em;
         margin-bottom: 0em;
     }
+
+    /* Keep the open Crisp chat window centered with a viewport gutter. */
+    #crisp-chatbox {
+        position: fixed !important;
+        top: 20px !important;
+        right: 0 !important;
+        bottom: 20px !important;
+        left: 0 !important;
+        width: min(760px, calc(100vw - 40px)) !important;
+        height: min(560px, calc(100dvh - 40px)) !important;
+        margin: auto !important;
+        transform: none !important;
+    }
+
+    @media (max-width: 767px) {
+        #crisp-chatbox {
+            width: min(420px, calc(100vw - 40px)) !important;
+            height: min(680px, calc(100dvh - 40px)) !important;
+        }
+    }
+
 /* Janesh portfolio refresh */
 :root {
     --font-primary: 'DM Sans', sans-serif;
