@@ -3,7 +3,6 @@ import re
 from pydantic import (
     BaseModel,
     ConfigDict,
-    EmailStr,
     Field,
     field_validator,
 )
@@ -22,11 +21,6 @@ class EditProfileRequest(BaseModel):
     last_name: str | None = Field(
         default=None,
         max_length=155,
-    )
-
-    email: EmailStr | None = Field(
-        default=None,
-        max_length=255,
     )
 
     country_code: str | None = Field(
@@ -73,14 +67,6 @@ class EditProfileRequest(BaseModel):
 
         return value
 
-    @field_validator("email", mode="before")
-    @classmethod
-    def normalize_email(cls, value):
-
-        if isinstance(value, str):
-            return value.strip().lower()
-
-        return value
 
     @field_validator("country_code", mode="before")
     @classmethod

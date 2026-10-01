@@ -32,10 +32,6 @@ class EditProfileService:
             settings.LOCAL_STORAGE_PATH
         ).resolve()
 
-        self.profile_image_dir = (
-            self.storage_dir / "profile_images"
-        )
-
     async def edit_profile(
         self,
         user_id: UUID,
@@ -110,10 +106,7 @@ class EditProfileService:
                 )
 
                 profile.name = user.full_name
-
-            if "email" in data:
-                user.email = data["email"]
-                profile.email_id = data["email"]
+                
             country_code = data.get("country_code")
             phone = data.get("phone")
 
@@ -166,21 +159,22 @@ class EditProfileService:
                     image.content_type
                 ]
 
-                self.profile_image_dir.mkdir(
+                user_profile_image_dir = (
+                    self.storage_dir
+                    / str(user_id)
+                    / "profile_images"
+                )
+
+                user_profile_image_dir.mkdir(
                     parents=True,
                     exist_ok=True,
                 )
 
                 filename = f"{uuid4().hex}{extension}"
-
-                new_image_path = (
-                    self.profile_image_dir / filename
-                )
-
+                new_image_path = user_profile_image_dir / filename
                 new_image_path.write_bytes(content)
-
                 profile.profile_image = str(
-                    Path("profile_images") / filename
+                    Path(str(user_id)) / "profile_images" / filename
                 )
 
             if "delete" in data:

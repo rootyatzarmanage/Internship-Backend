@@ -40,7 +40,6 @@ async def edit_profile(
 
     first_name: str | None = Form(default=None),
     last_name: str | None = Form(default=None),
-    email: str | None = Form(default=None),
 
     country_code: str | None = Form(default=None),
     phone: str | None = Form(default=None),
@@ -56,7 +55,6 @@ async def edit_profile(
         form_data = {
             "first_name": first_name,
             "last_name": last_name,
-            "email": email,
             "country_code": country_code,
             "phone": phone,
             "country": country,
