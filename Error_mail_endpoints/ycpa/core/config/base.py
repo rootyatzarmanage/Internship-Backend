@@ -54,5 +54,13 @@ class BaseAppSettings(BaseSettings):
     SMTP_FROM: str = ""
     HACKMYIP_LOOKUP_URL: str
     HACKMYIP_MY_IP_URL: str
+    
+    ERROR_SMTP_HOST: str = ""
+    ERROR_SMTP_PORT: int = 587
+    ERROR_SMTP_USER: str = ""
+    ERROR_SMTP_PASSWORD: str = ""
+    ERROR_SMTP_FROM: str = ""
+
+    ERROR_ALERT_EMAIL: str = ""
 
     FRONTEND_URL: str = "https://app.nithinkcn.com"

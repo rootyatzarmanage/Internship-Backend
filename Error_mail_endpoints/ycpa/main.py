@@ -2,19 +2,27 @@ import logging
 import os
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncConnection
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 from ycpa.api.v1.router import api_router
 from ycpa.core.config import get_settings
 from ycpa.core.database.base import Base
 from ycpa.core.database.engine import engine
-from ycpa.core.exception_handlers import app_exception_handler
+from ycpa.core.exception_handlers import (
+    app_exception_handler,
+    http_exception_handler,
+    validation_exception_handler,
+    unhandled_exception_handler,
+)
 from ycpa.core.exceptions import AppException
 # from ycpa.core.error_handlers import register_exception_handlers
 # from ycpa.core.lifespan import lifespan
 # from ycpa.core.logger import VisualLogger, setup_logging
 # from ycpa.middleware.registry import register_middleware
+
 
 settings = get_settings()
 
@@ -50,6 +58,22 @@ app.add_exception_handler(
     AppException,
     app_exception_handler
 )
+
+app.add_exception_handler(
+    StarletteHTTPException,
+    http_exception_handler,
+)
+
+app.add_exception_handler(
+    RequestValidationError,
+    validation_exception_handler,
+)
+
+app.add_exception_handler(
+    Exception,
+    unhandled_exception_handler,
+)
+
 # middleware_manifest = register_middleware(app, settings)
 # VisualLogger.middleware_table(middleware_manifest)
 # register_exception_handlers(app)
