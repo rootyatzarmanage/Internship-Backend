@@ -2,7 +2,7 @@ import logging
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ycpa.models.audit import AuditLog
@@ -63,8 +63,6 @@ class ActivityLogRepository:
             row[0]
             for row in aim_result.all()
         )
-
-        # Include workspaces owned by the current user.
         pim_owner_query = select(
             PimWorkspace.id
         ).where(
@@ -125,14 +123,11 @@ class ActivityLogRepository:
         self,
         user_id: UUID,
         category: ActivityLogFilter = "all",
-        limit: int = 20,
+        limit: int = 10,
         offset: int = 0,
     ) -> tuple[list[tuple], int]:
 
-        workspace_ids = await self.get_user_workspace_ids(
-            user_id=user_id,
-        )
-
+        workspace_ids = await self.get_user_workspace_ids(user_id=user_id)
         if not workspace_ids:
             return [], 0
 
@@ -140,36 +135,20 @@ class ActivityLogRepository:
             AuditLog.status == "success",
             AuditLog.workspace_id.in_(workspace_ids),
         ]
-
-        category_condition = self._category_condition(
-            category
-        )
-
+        category_condition = self._category_condition(category)
         if category_condition is not None:
-            base_conditions.append(
-                category_condition
-            )
+            base_conditions.append(category_condition)
 
         count_query = (
-            select(AuditLog.id)
-            .where(
-                and_(*base_conditions)
-            )
+            select(func.count(AuditLog.id))
+            .where(and_(*base_conditions))
         )
 
-        count_result = await self.session.execute(
-            count_query
-        )
-
-        total = len(
-            count_result.scalars().all()
-        )
+        count_result = await self.session.execute(count_query)
+        total = count_result.scalar_one()
 
         query = (
-            select(
-                AuditLog,
-                User,
-            )
+            select(AuditLog,User)
             .join(
                 User,
                 User.id == AuditLog.user_id,
@@ -178,14 +157,14 @@ class ActivityLogRepository:
                 and_(*base_conditions)
             )
             .order_by(
-                AuditLog.created_at.desc()
+                AuditLog.created_at.desc(),
+                AuditLog.id.desc()
             )
             .offset(offset)
             .limit(limit)
         )
 
         result = await self.session.execute(query)
-
         rows = result.all()
 
         logger.info(
@@ -196,6 +175,8 @@ class ActivityLogRepository:
                 "workspace_count": len(workspace_ids),
                 "result_count": len(rows),
                 "total": total,
+                "limit": limit,
+                "offset": offset,
             },
         )
 

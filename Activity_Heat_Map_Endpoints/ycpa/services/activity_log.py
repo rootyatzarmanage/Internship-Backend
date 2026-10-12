@@ -199,7 +199,7 @@ class ActivityLogService:
         self,
         current_user,
         category: ActivityLogFilter = "all",
-        limit: int = 20,
+        limit: int = 10,
         offset: int = 0,
     ) -> ActivityLogResponse:
 
@@ -232,72 +232,33 @@ class ActivityLogService:
                 else "Unknown User"
             )
 
-            resource_name = (
-                self._extract_resource_name(
-                    audit
-                )
-            )
+            resource_name = (self._extract_resource_name(audit))
 
             activities.append(
                 ActivityLogItemResponse(
                     id=audit.id,
-
-                    actor_id=str(
-                        audit.user_id
-                    ),
-
+                    actor_id=str(audit.user_id),
                     actor_name=actor_name,
-
-                    actor_initials=(
-                        self._get_initials(
-                            actor_name
-                        )
-                    ),
-
+                    actor_initials=(self._get_initials(actor_name)),
                     action=audit.action,
-
-                    resource_type=(
-                        audit.resource_type
-                    ),
-
-                    resource_id=(
-                        audit.resource_id
-                    ),
-
-                    resource_name=(
-                        resource_name
-                    ),
-
-                    category=(
-                        resolved_category
-                    ),
-
+                    resource_type=(audit.resource_type),
+                    resource_id=(audit.resource_id),
+                    resource_name=(resource_name),
+                    category=(resolved_category),
                     workspace_id=(
                         str(audit.workspace_id)
                         if audit.workspace_id
                         else None
                     ),
-
                     workspace_name=None,
-
                     project_id=(
                         str(audit.project_id)
                         if audit.project_id
                         else None
                     ),
-
                     project_name=None,
-
-                    created_at=(
-                        audit.created_at
-                    ),
-
-                    relative_time=(
-                        self._relative_time(
-                            audit.created_at
-                        )
-                    ),
-
+                    created_at=(audit.created_at),
+                    relative_time=(self._relative_time(audit.created_at)),
                     message=(
                         self._build_message(
                             actor_name=actor_name,
@@ -315,8 +276,5 @@ class ActivityLogService:
             total=total,
             limit=limit,
             offset=offset,
-            has_more=(
-                offset + len(activities)
-                < total
-            ),
+            has_more=(offset + len(activities) < total)
         )

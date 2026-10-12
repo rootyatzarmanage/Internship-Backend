@@ -51,14 +51,16 @@ async def get_activity_log(
     ),
 
     limit: int = Query(
-        default=20,
+        default=10,
         ge=1,
         le=100,
+        description="Number of activity records per page"
     ),
 
     offset: int = Query(
         default=0,
         ge=0,
+        description="Number of activity records to skip"
     ),
 ) -> BaseResponse[ActivityLogResponse]:
 

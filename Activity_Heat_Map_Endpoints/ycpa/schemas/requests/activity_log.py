@@ -20,10 +20,10 @@ class ActivityLogRequest(BaseModel):
     )
 
     limit: int = Field(
-        default=20  ,
+        default=10  ,
         ge=1,
         le=100,
-        description="Maximum number of activity records to return",
+        description="Maximum number of activity records per page",
     )
 
     offset: int = Field(
