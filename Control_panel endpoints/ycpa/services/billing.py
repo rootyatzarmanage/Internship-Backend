@@ -15,6 +15,7 @@ from ycpa.core.exceptions import (
 from ycpa.models.subscription import AimSubscription, PimSubscription, SubscriptionPlan
 from ycpa.models.user import User
 from ycpa.services.base import BaseService
+from ycpa.services.notification import notify
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -254,6 +255,11 @@ class BillingService(BaseService):
             db_order.payment_method = payment.get("method")
 
         await self.session.commit()
+        if db_order:
+            await notify(self.session, "payment", "Payment received", {
+                "Invoice ID": db_order.invoice_id, "User": user.email,
+                "Amount": f"{db_order.amount / 100:.2f} {db_order.currency}",
+                "Plan": f"{db_order.product_type}/{db_order.plan}", "Transaction": db_order.transaction_id})
 
         logger.info(
             "Subscription upgraded",

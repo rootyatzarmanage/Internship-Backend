@@ -44,7 +44,7 @@ from ycpa.models import (
     PimScopeDiscipline,
     PimScopeItem,
     order,
-    ControlPanel
+    ControlPanel, IdCounter, Ticket, ContactInformation, BookDemo
 )
 
 config = context.config

@@ -22,6 +22,7 @@ from ycpa.models.storage_usage import StorageUsage
 from ycpa.models.subscription import AimSubscription, PimSubscription
 from ycpa.models.workspace import PimWorkspace, PimWorkspaceMember, PimProject, PimProjectMember
 from ycpa.repositories.auth.users import UserRepository
+from ycpa.services.notification import notify
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -249,6 +250,12 @@ async def signup(body: SignupRequest, session: DatabaseSession) -> SuccessRespon
     session.add(project_member)
 
     await session.commit()
+    await notify(session, "user_register", "New user registered",
+                 {"User ID": user.user_id, "Name": user.full_name, "Email": user.email})
+    await notify(session, "workspace", "New workspace created",
+                 {"Workspace ID": workspace.workspace_id, "Name": workspace.name, "Owner": user.email})
+    await notify(session, "project", "New project created",
+                 {"Project ID": project.project_id, "Name": project.name, "Workspace ID": workspace.workspace_id})
 
     logger.info("New user registered with default workspace and project", extra={
         "user_id": str(user.id),

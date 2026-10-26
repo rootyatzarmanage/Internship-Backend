@@ -16,6 +16,7 @@ class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    invoice_id: Mapped[str | None] = mapped_column(Text, unique=True, index=True, nullable=True)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     razorpay_order_id: Mapped[str] = mapped_column(Text, unique=True, nullable=False, index=True)
     razorpay_payment_id: Mapped[str | None] = mapped_column(Text, nullable=True, index=True)

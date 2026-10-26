@@ -11,6 +11,11 @@ from ycpa.core.database.base import Base
 from ycpa.core.database.engine import engine
 from ycpa.core.exception_handlers import app_exception_handler
 from ycpa.core.exceptions import AppException
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from ycpa.core.database.session import AsyncSessionLocal
+from ycpa.core.id_generator import backfill_all_ids   # also registers the ID listener
+from ycpa.services.notification import notify
 # from ycpa.core.error_handlers import register_exception_handlers
 # from ycpa.core.lifespan import lifespan
 # from ycpa.core.logger import VisualLogger, setup_logging
@@ -31,6 +36,8 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables verified.")
+    async with AsyncSessionLocal() as s:
+        await backfill_all_ids(s)
     yield
 
 app = FastAPI(
@@ -50,6 +57,18 @@ app.add_exception_handler(
     AppException,
     app_exception_handler
 )
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    try:
+        async with AsyncSessionLocal() as s:
+            await notify(s, "error", "Application error", {
+                "Endpoint": f"{request.method} {request.url.path}",
+                "Error": f"{type(exc).__name__}: {exc}"[:500]})
+    except Exception:
+        pass
+    return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
+
+app.add_exception_handler(Exception, unhandled_exception_handler)
 # middleware_manifest = register_middleware(app, settings)
 # VisualLogger.middleware_table(middleware_manifest)
 # register_exception_handlers(app)

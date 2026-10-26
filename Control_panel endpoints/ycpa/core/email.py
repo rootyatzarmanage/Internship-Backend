@@ -21,17 +21,21 @@ def _build_tls_context() -> ssl.SSLContext:
     return ctx
 
 
-async def send_email(to: str, subject: str, html_body: str) -> bool:
+async def send_email(to: str, subject: str, html_body: str, cc: list[str] | None = None) -> bool:
 
     try:
+        cc = [c for c in (cc or []) if c and c.lower() != to.lower()]
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"]    = settings.SMTP_FROM
         msg["To"]      = to
+        if cc:
+            msg["Cc"] = ", ".join(cc)
         msg.attach(MIMEText(html_body, "html"))
 
         await aiosmtplib.send(
             msg,
+            recipients=[to, *cc],
             hostname=settings.SMTP_HOST,
             port=settings.SMTP_PORT,
             username=settings.SMTP_USER,
@@ -39,7 +43,7 @@ async def send_email(to: str, subject: str, html_body: str) -> bool:
             start_tls=True,
             tls_context=_build_tls_context(),
         )
-        logger.info(f"Email sent to {to}", extra={"subject": subject})
+        logger.info(f"Email sent to {to}", extra={"subject": subject, "cc": cc})
         return True
 
     except Exception as e:
@@ -392,3 +396,15 @@ def build_file_share_invite_email(
 
 
  
+def build_notification_email(title: str, rows: dict) -> str:
+    import html as html_lib
+    cells = "".join(
+        f'<tr><td style="padding:6px 12px;font-weight:600;color:#323130;">{html_lib.escape(str(k))}</td>'
+        f'<td style="padding:6px 12px;color:#605e5c;">{html_lib.escape(str(v if v is not None else "-"))}</td></tr>'
+        for k, v in rows.items()
+    )
+    return f"""<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#f3f2f1;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #edebe9;margin:auto;">
+<tr><td style="background:#0078d4;padding:16px 24px;color:#fff;font-size:16px;font-weight:700;">{html_lib.escape(title)}</td></tr>
+<tr><td style="padding:16px 12px;"><table width="100%" cellpadding="0" cellspacing="0">{cells}</table></td></tr>
+</table></body></html>"""
