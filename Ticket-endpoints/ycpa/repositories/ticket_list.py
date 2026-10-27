@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import noload
@@ -11,14 +13,16 @@ class TicketListRepository(BaseRepository[Ticket]):
     def __init__(self, session: AsyncSession):
         super().__init__(Ticket, session)
 
-    async def stats(self) -> tuple[int, int]:
-        q = select(func.count(Ticket.id), func.count(Ticket.id).filter(Ticket.status == "solved")).where(Ticket.deleted_at.is_(None))
+    async def stats(self, user_id: UUID) -> tuple[int, int]:
+        q = select(func.count(Ticket.id), func.count(Ticket.id).filter(Ticket.status == "solved")).where(
+            Ticket.user_id == user_id, Ticket.deleted_at.is_(None),
+        )
         total, solved = (await self.session.execute(q)).one()
         return total, solved
 
-    async def paginate(self, status: str, search: str | None, category: str | None,
+    async def paginate(self, user_id: UUID, status: str, search: str | None, category: str | None,
                        sort_by: str, order: str, page: int, per_page: int) -> tuple[list[Ticket], int]:
-        conds = [Ticket.deleted_at.is_(None)]
+        conds = [Ticket.user_id == user_id, Ticket.deleted_at.is_(None)]
         if status == "solved":
             conds.append(Ticket.status == "solved")
         elif status == "pending":

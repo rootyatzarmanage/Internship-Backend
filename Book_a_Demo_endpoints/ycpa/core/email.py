@@ -408,3 +408,140 @@ def build_notification_email(title: str, rows: dict) -> str:
 <tr><td style="background:#0078d4;padding:16px 24px;color:#fff;font-size:16px;font-weight:700;">{html_lib.escape(title)}</td></tr>
 <tr><td style="padding:16px 12px;"><table width="100%" cellpadding="0" cellspacing="0">{cells}</table></td></tr>
 </table></body></html>"""
+
+
+def build_demo_confirmation_email(name: str, scheduled_for: str, timezone_name: str, booking_id: str | None) -> str:
+    import html as html_lib
+    safe_name = html_lib.escape(name)
+    safe_when = html_lib.escape(scheduled_for)
+    safe_tz = html_lib.escape(timezone_name)
+    safe_id = html_lib.escape(booking_id or "-")
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your Yatzar Manage demo is booked</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f2f1;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f2f1;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #edebe9;border-radius:2px;">
+          <tr>
+            <td style="background:#0078d4;padding:20px 32px;">
+              <p style="margin:0;font-size:18px;font-weight:700;color:#ffffff;letter-spacing:-0.01em;">Yatzar Manage</p>
+              <p style="margin:4px 0 0;font-size:11px;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:0.06em;">Demo Booking</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 32px 20px;">
+              <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#323130;">Your demo is booked</p>
+              <p style="margin:0;font-size:14px;color:#605e5c;line-height:1.6;">Hi {safe_name},</p>
+              <p style="margin:12px 0 0;font-size:14px;color:#605e5c;line-height:1.6;">
+                Thanks for your interest in Yatzar Manage. Our team will walk you through the platform at the time below
+                and will contact you before the session.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 24px;">
+              <table cellpadding="0" cellspacing="0" style="background:#faf9f8;border:1px solid #edebe9;width:100%;">
+                <tr>
+                  <td style="padding:14px 16px;">
+                    <p style="margin:0;font-size:13px;color:#323130;"><strong>When:</strong> {safe_when}</p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#323130;"><strong>Timezone:</strong> {safe_tz}</p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#323130;"><strong>Booking ID:</strong> {safe_id}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px;border-top:1px solid #edebe9;">
+              <p style="margin:0;font-size:11px;color:#a19f9d;line-height:1.6;">
+                You received this email because a demo was requested with your address on Yatzar Manage.
+                If this wasn't you, you can safely ignore it.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+
+# Calendar invite (.ics)
+import asyncio
+import smtplib
+from datetime import datetime, timezone
+from email.message import EmailMessage
+
+
+def _ics_escape(text: str) -> str:
+    return (text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+            .replace("\r\n", "\\n").replace("\n", "\\n"))
+
+
+def _ics_fold(line: str) -> str:
+    """RFC 5545: lines are at most 75 octets; continuation lines start with a space."""
+    b, parts, limit = line.encode(), [], 75
+    while len(b) > limit:
+        cut = limit
+        while (b[cut] & 0xC0) == 0x80:
+            cut -= 1
+        parts.append(b[:cut].decode())
+        b, limit = b[cut:], 74
+    parts.append(b.decode())
+    return "\r\n ".join(parts)
+
+
+def build_ics(uid: str, starts_at: datetime, ends_at: datetime, summary: str, description: str,
+              location: str, organizer_email: str, attendee_name: str, attendee_email: str) -> str:
+    fmt = lambda d: d.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")  # noqa: E731
+    cn = "".join(ch for ch in attendee_name if ch not in '\";:,')
+    lines = [
+        "BEGIN:VCALENDAR", "PRODID:-//Yatzar Manage//Demo Booking//EN", "VERSION:2.0", "CALSCALE:GREGORIAN",
+        "METHOD:REQUEST", "BEGIN:VEVENT",
+        f"UID:{uid}", f"DTSTAMP:{fmt(datetime.now(timezone.utc))}",
+        f"DTSTART:{fmt(starts_at)}", f"DTEND:{fmt(ends_at)}",
+        "SEQUENCE:0", "STATUS:CONFIRMED", "TRANSP:OPAQUE",
+        f"SUMMARY:{_ics_escape(summary)}", f"DESCRIPTION:{_ics_escape(description)}",
+        *([f"LOCATION:{_ics_escape(location)}"] if location else []),
+        f"ORGANIZER;CN=Yatzar Manage:mailto:{organizer_email}",
+        f'ATTENDEE;CN="{cn}";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:{attendee_email}',
+        "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY", "DESCRIPTION:Yatzar Manage demo", "END:VALARM",
+        "END:VEVENT", "END:VCALENDAR",
+    ]
+    return "\r\n".join(_ics_fold(line) for line in lines) + "\r\n"
+
+
+def build_invite_message(to: str, subject: str, html: str, ics: str, sender: str) -> EmailMessage:
+    msg = EmailMessage()
+    msg["Subject"], msg["From"], msg["To"] = subject, sender, to
+    msg.set_content("Your Yatzar Manage demo is booked. The calendar invite is attached.")
+    msg.add_alternative(html, subtype="html")
+    msg.add_alternative(ics, subtype="calendar", params={"method": "REQUEST", "charset": "UTF-8"})
+    msg.add_attachment(ics.encode("utf-8"), maintype="text", subtype="calendar", filename="invite.ics",
+                       params={"method": "REQUEST", "charset": "UTF-8"})
+    return msg
+
+
+async def send_email_with_ics(to: str, subject: str, html: str, ics: str) -> None:
+    s = get_settings()
+
+    def _send() -> None:
+        msg = build_invite_message(to, subject, html, ics, s.SMTP_FROM)
+        if s.SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(s.SMTP_HOST, s.SMTP_PORT, timeout=20) as smtp:
+                smtp.login(s.SMTP_USER, s.SMTP_PASSWORD)
+                smtp.send_message(msg)
+        else:
+            with smtplib.SMTP(s.SMTP_HOST, s.SMTP_PORT, timeout=20) as smtp:
+                smtp.starttls()
+                smtp.login(s.SMTP_USER, s.SMTP_PASSWORD)
+                smtp.send_message(msg)
+
+    await asyncio.to_thread(_send)

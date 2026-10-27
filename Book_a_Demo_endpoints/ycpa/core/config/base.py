@@ -54,3 +54,13 @@ class BaseAppSettings(BaseSettings):
     SMTP_FROM: str = ""
 
     FRONTEND_URL: str = "https://app.nithinkcn.com"
+
+    # Demo booking
+    BOOKING_TIMEZONE: str = "Asia/Kolkata"
+    BOOKING_SLOT_TIMES: str = "10:00,11:00,12:00,13:00,14:00,15:00,16:00,17:00"
+    BOOKING_DURATION_MINUTES: int = 60
+    BOOKING_WORKING_WEEKDAYS: str = "0,1,2,3,4,5,6"
+    BOOKING_MIN_NOTICE_HOURS: int = 2
+    BOOKING_MAX_ADVANCE_DAYS: int = 3
+    BOOKING_ORGANIZER_EMAIL: str = ""
+    BOOKING_MEETING_URL: str = ""

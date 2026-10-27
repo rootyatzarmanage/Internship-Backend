@@ -16,6 +16,7 @@ MAIL_SLUGS = {
     "payment":       "Mail-Settings/Payment-Notification",
     "project":       "Mail-Settings/Project-Notification",
     "ticket":        "Mail-Settings/Ticket-Notification",
+    "book_demo":     "Mail-Settings/Book-Demo-Notification",
 }
 _tasks: set = set()
 

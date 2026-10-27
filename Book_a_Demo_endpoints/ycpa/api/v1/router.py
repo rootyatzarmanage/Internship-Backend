@@ -7,7 +7,8 @@ from ycpa.api.v1.endpoints import (
     control_panel,
     support_tickets,
     ticket_list,
-    ticket_reply
+    ticket_reply,
+    book_demo,
 )
 
 api_router = APIRouter()
@@ -20,3 +21,4 @@ api_router.include_router(control_panel.router)
 api_router.include_router(support_tickets.router)
 api_router.include_router(ticket_list.router)
 api_router.include_router(ticket_reply.router)
+api_router.include_router(book_demo.router)

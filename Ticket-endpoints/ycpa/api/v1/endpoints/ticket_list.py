@@ -1,9 +1,8 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from ycpa.core.auth.dependencies import StaffUser
+from ycpa.core.auth.dependencies import CurrentUser
 from ycpa.core.database.dependencies import DatabaseSession
 from ycpa.core.schemas.responses import SuccessResponse
 from ycpa.schemas.requests.ticket_list import TicketListQuery, ticket_list_query
@@ -14,16 +13,10 @@ router = APIRouter(prefix="/ticket-list", tags=["Ticket List"])
 
 
 @router.get("/stats", response_model=SuccessResponse[TicketStatsResponse], summary="Total / pending / solved counts")
-async def ticket_stats(session: DatabaseSession, staff: StaffUser):
-    return SuccessResponse(data=await TicketListService(session).stats())
+async def ticket_stats(session: DatabaseSession, current_user: CurrentUser):
+    return SuccessResponse(data=await TicketListService(session).stats(current_user))
 
 
 @router.get("", response_model=SuccessResponse[TicketListResponse], summary="Support tickets table (All / Solved / Pending, search, sort)")
-async def list_tickets(session: DatabaseSession, staff: StaffUser, q: Annotated[TicketListQuery, Depends(ticket_list_query)]):
-    return SuccessResponse(data=await TicketListService(session).list_tickets(q))
-
-
-@router.delete("/{ticket_id}", response_model=SuccessResponse[None], summary="Delete ticket (soft)")
-async def delete_ticket(ticket_id: UUID, session: DatabaseSession, staff: StaffUser):
-    await TicketListService(session).delete_ticket(ticket_id, staff)
-    return SuccessResponse(message="Ticket deleted.")
+async def list_tickets(session: DatabaseSession, current_user: CurrentUser, q: Annotated[TicketListQuery, Depends(ticket_list_query)]):
+    return SuccessResponse(data=await TicketListService(session).list_tickets(current_user, q))
