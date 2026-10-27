@@ -1,0 +1,76 @@
+import logging
+import os
+
+from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncConnection
+from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
+from ycpa.api.v1.router import api_router
+from ycpa.core.config import get_settings
+from ycpa.core.database.base import Base
+from ycpa.core.database.engine import engine
+from ycpa.core.exception_handlers import app_exception_handler
+from ycpa.core.exceptions import AppException, InternalServerException
+from fastapi import Request
+from ycpa.core.database.session import AsyncSessionLocal
+from ycpa.core.id_generator import backfill_all_ids   # also registers the ID listener
+# from ycpa.core.error_handlers import register_exception_handlers
+# from ycpa.core.lifespan import lifespan
+# from ycpa.core.logger import VisualLogger, setup_logging
+# from ycpa.middleware.registry import register_middleware
+
+settings = get_settings()
+
+# setup_logging()
+if settings.ENVIRONMENT == "production":
+    logging.getLogger("sqlalchemy.engine").disabled = True
+
+logger = logging.getLogger(__name__)
+enable_docs = settings.DEBUG or settings.ENVIRONMENT != "production"
+@asynccontextmanager
+
+async def lifespan(app: FastAPI):
+    logger.info("Initializing database tables...")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables verified.")
+    async with AsyncSessionLocal() as s:
+        await backfill_all_ids(s)
+    yield
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs" if enable_docs else None,
+    redoc_url="/redoc" if enable_docs else None,
+    openapi_url="/openapi.json" if enable_docs else None,
+    swagger_ui_parameters={
+        "defaultModelsExpandDepth": -1,
+        "persistAuthorization": True,
+    },
+)
+
+app.add_exception_handler(
+    AppException,
+    app_exception_handler
+)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return await app_exception_handler(request, InternalServerException())
+
+app.add_exception_handler(Exception, unhandled_exception_handler)
+# middleware_manifest = register_middleware(app, settings)
+# VisualLogger.middleware_table(middleware_manifest)
+# register_exception_handlers(app)
+app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+
+os.makedirs(settings.LOCAL_STORAGE_PATH, exist_ok=True)
+app.mount(
+    f"{settings.API_V1_PREFIX}/storage-files",
+    StaticFiles(directory=settings.LOCAL_STORAGE_PATH),
+    name="storage",
+)
+logger.info("Local storage mounted at %s/storage-files -> %s", settings.API_V1_PREFIX, settings.LOCAL_STORAGE_PATH)
+ 
