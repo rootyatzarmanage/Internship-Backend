@@ -1,0 +1,72 @@
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+
+.venv/
+.venv312/
+venv/
+ENV/
+env/
+mamba_env/
+
+
+.pypirc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cx_freeze/
+
+.env
+.env.*
+!.env.example
+secrets.toml
+*.pem
+*.key
+*.pub
+
+
+*.db
+*.sqlite3
+*.sqlite
+/logs/
+/storage/
+*.log
+
+.idea/
+*.iml
+
+# VS Code settings
+.vscode/
+.history/
+*.code-workspace
+
+# Mac OS metadata
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# 🧪 Project Specific Assets
+# ==========================================
+# Excludes your 3D runtime verification models from tracking
+test_verify.glb
