@@ -43,6 +43,7 @@ from ycpa.models.control_panel import ControlPanel, IdCounter
 from ycpa.models.order import Order
 from ycpa.models.tickets import Ticket
 from ycpa.models.enquiry import ContactInformation, BookDemo
+from ycpa.models.book_demo_team import BookDemoTeam
 __all__ = [
     "CostItem",
     "Vendor",
@@ -91,4 +92,5 @@ __all__ = [
     "UserPlatformPermission",
     "ControlPanel",
     "IdCounter", "Order", "Ticket", "ContactInformation", "BookDemo",
+    "BookDemoTeam",
 ]

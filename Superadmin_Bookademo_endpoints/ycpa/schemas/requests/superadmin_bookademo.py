@@ -8,6 +8,7 @@ from ycpa.core.exceptions import ValidationException
 BookDemoView = Literal["all", "upcoming", "cancelled"]
 BookDemoStatus = Literal["new", "cancelled"]
 SortOrder = Literal["asc", "desc"]
+BookDemoAssignmentFilter = Literal["assigned", "unassigned"]
 
 MAX_OVERVIEW_DAYS = 92
 
@@ -50,6 +51,7 @@ class SuperadminBookDemoListQuery(BaseModel):
     country: str | None = Field(None, max_length=100)
     status: BookDemoStatus | None = None
     invite: int | None = Field(None, ge=0, le=1)
+    assignment: BookDemoAssignmentFilter | None = None
     order: SortOrder = "asc"
     page: int = Field(1, ge=1)
     per_page: int = Field(6, ge=1, le=100)

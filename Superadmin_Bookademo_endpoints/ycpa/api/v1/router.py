@@ -5,6 +5,7 @@ from ycpa.api.v1.endpoints import (
     cognito,
     users,
     superadmin_bookademo,
+    superadmin_bookademo_team,
 )
 
 api_router = APIRouter()
@@ -13,4 +14,5 @@ api_router.include_router(auth.router)
 api_router.include_router(cognito.router)
 api_router.include_router(users.router)
 api_router.include_router(superadmin_bookademo.router)
+api_router.include_router(superadmin_bookademo_team.router)
 

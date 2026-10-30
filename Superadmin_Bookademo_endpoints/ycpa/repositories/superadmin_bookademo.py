@@ -1,30 +1,32 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from ycpa.core.exceptions import DatabaseException
+from ycpa.models.book_demo_team import MEMBER, BookDemoTeam
 from ycpa.models.enquiry import BookDemo
 from ycpa.repositories.base import BaseRepository
 
 
 @dataclass
 class BookDemoFilters:
-    """Table filters already converted to UTC (the service owns timezone logic)."""
     now: datetime
     view: str = "all"
     search: str | None = None
-    start_utc: datetime | None = None   # inclusive
-    end_utc: datetime | None = None     # exclusive
+    start_utc: datetime | None = None   
+    end_utc: datetime | None = None     
     country: str | None = None
     status: str | None = None
     invite: int | None = None
+    assignment: str | None = None       
 
 
 def _active():
-    """A booking that occupies a slot (not archived, not cancelled)."""
     return (BookDemo.deleted_at.is_(None), BookDemo.status != "cancelled")
 
 
@@ -40,6 +42,9 @@ def _conditions(f: BookDemoFilters) -> list:
         conds.append(BookDemo.opt == f.invite)
     if f.country:
         conds.append(func.lower(BookDemo.country) == f.country.lower())
+    if f.assignment:
+        has_team = func.cardinality(BookDemo.assigned_member_ids) > 0
+        conds += [BookDemo.status != "cancelled", has_team if f.assignment == "assigned" else ~has_team]
     if f.start_utc:
         conds.append(BookDemo.preferred_at >= f.start_utc)
     if f.end_utc:
@@ -67,7 +72,6 @@ class SuperadminBookDemoRepository(BaseRepository[BookDemo]):
     def __init__(self, session: AsyncSession):
         super().__init__(BookDemo, session)
 
-    # ── Overview ─────────────────────────────────────────────────────────────
     async def summary(self, now: datetime) -> dict[str, int]:
         """KPI cards + Calendar Invite Preference, in one query."""
         n = func.count(BookDemo.id)
@@ -95,7 +99,6 @@ class SuperadminBookDemoRepository(BaseRepository[BookDemo]):
         except DBAPIError as e:
             raise DatabaseException("Failed to load Book a Demo activity") from e
 
-    # ── Calendar / slots ─────────────────────────────────────────────────────
     async def active_by_start(self, start: datetime, end: datetime) -> dict[datetime, BookDemo]:
         """Slot-occupying bookings keyed by their UTC start, for start <= preferred_at < end."""
         stmt = select(BookDemo).where(*_active(), BookDemo.preferred_at >= start, BookDemo.preferred_at < end)
@@ -105,7 +108,6 @@ class SuperadminBookDemoRepository(BaseRepository[BookDemo]):
             raise DatabaseException("Failed to load Book a Demo calendar") from e
         return {r.preferred_at.astimezone(timezone.utc): r for r in rows}
 
-    # ── List / export ────────────────────────────────────────────────────────
     async def paginate(self, f: BookDemoFilters, order: str, page: int, per_page: int) -> tuple[list[BookDemo], int]:
         conds = _conditions(f)
         try:
@@ -121,6 +123,19 @@ class SuperadminBookDemoRepository(BaseRepository[BookDemo]):
             return list((await self.session.execute(stmt)).scalars().all())
         except DBAPIError as e:
             raise DatabaseException("Failed to export Book a Demo records") from e
+
+    async def team_lookup(self, member_ids: set[UUID]) -> dict[UUID, tuple[str, bool, str]]:
+        """member_id -> (name, is_active, level_name) for the members shown on the page ("Assigned team" column)."""
+        if not member_ids:
+            return {}
+        level = aliased(BookDemoTeam)
+        stmt = (select(BookDemoTeam.id, BookDemoTeam.name, BookDemoTeam.is_active, level.name)
+                .join(level, level.id == BookDemoTeam.parent_id)
+                .where(BookDemoTeam.kind == MEMBER, BookDemoTeam.id.in_(member_ids)))
+        try:
+            return {r[0]: (r[1], r[2], r[3]) for r in (await self.session.execute(stmt)).all()}
+        except DBAPIError as e:
+            raise DatabaseException("Failed to load assigned teams") from e
 
     async def countries(self) -> list[str]:
         stmt = (select(BookDemo.country).where(BookDemo.deleted_at.is_(None), BookDemo.country.is_not(None), BookDemo.country != "")

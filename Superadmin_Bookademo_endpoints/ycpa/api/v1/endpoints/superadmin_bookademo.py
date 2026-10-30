@@ -7,6 +7,7 @@ from ycpa.core.auth.dependencies import SuperAdminUser
 from ycpa.core.database.dependencies import DatabaseSession
 from ycpa.core.schemas.responses import SuccessResponse
 from ycpa.schemas.requests.superadmin_bookademo import (
+    BookDemoAssignmentFilter,
     BookDemoStatus,
     BookDemoView,
     SortOrder,
@@ -123,6 +124,7 @@ async def export_bookings(
     country: str | None = Query(None, max_length=100),
     status: BookDemoStatus | None = Query(None),
     invite: int | None = Query(None, ge=0, le=1, description="1 = invite requested, 0 = not requested"),
+    assignment: BookDemoAssignmentFilter | None = Query(None, description="assigned | unassigned (cancelled bookings never match)"),
     order: SortOrder = Query("asc", description="Sort by demo date & time"),
     page: int = Query(1, ge=1),
     per_page: int = Query(6, ge=1, le=100),
@@ -136,6 +138,7 @@ async def export_bookings(
         country=country,
         status=status,
         invite=invite,
+        assignment=assignment,
         order=order,
         page=page,
         per_page=per_page,
@@ -173,6 +176,7 @@ async def list_bookings(
     country: str | None = Query(None, max_length=100),
     status: BookDemoStatus | None = Query(None),
     invite: int | None = Query(None, ge=0, le=1, description="1 = invite requested, 0 = not requested"),
+    assignment: BookDemoAssignmentFilter | None = Query(None, description="assigned | unassigned (cancelled bookings never match)"),
     order: SortOrder = Query("asc", description="Sort by demo date & time"),
     page: int = Query(1, ge=1),
     per_page: int = Query(6, ge=1, le=100),
@@ -190,6 +194,7 @@ async def list_bookings(
         country=country,
         status=status,
         invite=invite,
+        assignment=assignment,
         order=order,
         page=page,
         per_page=per_page,

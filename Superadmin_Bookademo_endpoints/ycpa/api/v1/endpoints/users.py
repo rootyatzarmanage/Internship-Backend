@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-
-
 @router.get(
     "/me",
     response_model=SuccessResponse[UserProfileResponse],

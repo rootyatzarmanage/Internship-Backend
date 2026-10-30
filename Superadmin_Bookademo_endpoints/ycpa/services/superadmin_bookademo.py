@@ -22,6 +22,7 @@ from ycpa.schemas.requests.superadmin_bookademo import (
 )
 from ycpa.schemas.responses.superadmin_bookademo import (
     ActivityDayResponse,
+    AssignedTeamSummaryResponse,
     BookDemoKpiResponse,
     CalendarDayResponse,
     InvitePreferenceResponse,
@@ -73,7 +74,6 @@ class SuperadminBookDemoService(BaseService):
         self.min_notice = timedelta(hours=s.BOOKING_MIN_NOTICE_HOURS)
         self.max_advance = timedelta(days=s.BOOKING_MAX_ADVANCE_DAYS)
 
-    # ── time helpers (everything the admin sees is in the business timezone) ──
     @staticmethod
     def _now() -> datetime:
         return datetime.now(timezone.utc)
@@ -105,10 +105,9 @@ class SuperadminBookDemoService(BaseService):
             now=now, view=q.view, search=q.search,
             start_utc=self._day_start_utc(q.start_date) if q.start_date else None,
             end_utc=self._day_start_utc(q.end_date + timedelta(days=1)) if q.end_date else None,
-            country=q.country, status=q.status, invite=q.invite,
+            country=q.country, status=q.status, invite=q.invite, assignment=q.assignment,
         )
 
-    # ── 1. Overview: KPI cards, Calendar Invite Preference, Demo Booking Activity ──
     async def overview(self, q: SuperadminBookDemoOverviewQuery) -> SuperadminBookDemoOverviewResponse:
         now = self._now()
         today = self._today(now)
@@ -139,7 +138,6 @@ class SuperadminBookDemoService(BaseService):
             activity=activity,
         )
 
-    # ── 2. Demo Calendar (month): available / busy / unavailable ─────────────
     async def calendar(self, q: SuperadminBookDemoCalendarQuery) -> SuperadminBookDemoCalendarResponse:
         now = self._now()
         today = self._today(now)
@@ -166,7 +164,6 @@ class SuperadminBookDemoService(BaseService):
             min_notice_hours=int(self.min_notice.total_seconds() // 3600), max_advance_days=self.max_advance.days,
             as_of=now, days=days)
 
-    # ── 3. Selected-day slots ("3 booked · 4 open") ──────────────────────────
     async def slots(self, q: SuperadminBookDemoSlotsQuery) -> SuperadminBookDemoSlotsResponse:
         now = self._now()
         day = q.slot_date
@@ -194,8 +191,20 @@ class SuperadminBookDemoService(BaseService):
             date=day, timezone=self.tz_name, title=f"{day:%A}, {day.day} {day:%B %Y}",
             booked=n_booked, open=n_open, slots=items)
 
-    # ── 4. Demo Bookings table ───────────────────────────────────────────────
-    def _list_item(self, r: BookDemo) -> SuperadminBookDemoListItem:
+    @staticmethod
+    def _team_summary(r: BookDemo, lookup: dict) -> AssignedTeamSummaryResponse:
+        if r.status == "cancelled":
+            return AssignedTeamSummaryResponse(state="not_applicable")
+        ids = list(r.assigned_member_ids or [])
+        primary = lookup.get(r.assigned_primary_id) if r.assigned_primary_id else None
+        if not ids or not primary:
+            return AssignedTeamSummaryResponse(state="unassigned")
+        name, is_active, level_name = primary
+        return AssignedTeamSummaryResponse(
+            state="assigned", primary_member_id=r.assigned_primary_id, primary_name=name, primary_is_active=is_active,
+            level_name=level_name, supporting_count=len(ids) - 1)
+
+    def _list_item(self, r: BookDemo, lookup: dict) -> SuperadminBookDemoListItem:
         return SuperadminBookDemoListItem(
             id=r.id, book_demo_id=r.book_demo_id, name=r.name, email=r.email, company=r.company,
             phone_code=r.phone_code, phone=r.phone, country=r.country, preferred_at=r.preferred_at,
@@ -203,19 +212,20 @@ class SuperadminBookDemoService(BaseService):
             demo_time=self._time_label(r.preferred_at) if r.preferred_at else None,
             visitor_timezone=r.visitor_timezone, status=r.status, opt=r.opt, invite=_invite_label(r.opt),
             created_at=r.created_at, booked_on=self._date_label(r.created_at, self.biz_tz),
+            assigned_team=self._team_summary(r, lookup),
         )
 
     async def list_bookings(self, q: SuperadminBookDemoListQuery) -> SuperadminBookDemoListResponse:
         rows, total = await self.repo.paginate(self._filters(q, self._now()), q.order, q.page, q.per_page)
+        lookup = await self.repo.team_lookup({m for r in rows for m in (r.assigned_member_ids or [])})
         first = (q.page - 1) * q.per_page + 1 if rows else 0
         return SuperadminBookDemoListResponse(
-            items=[self._list_item(r) for r in rows], total=total, page=q.page, per_page=q.per_page,
+            items=[self._list_item(r, lookup) for r in rows], total=total, page=q.page, per_page=q.per_page,
             pages=max(1, math.ceil(total / q.per_page)), first_item=first, last_item=first + len(rows) - 1 if rows else 0)
 
     async def countries(self) -> list[str]:
         return await self.repo.countries()
 
-    # ── 5. Booking popup ─────────────────────────────────────────────────────
     async def detail(self, booking_id: UUID) -> SuperadminBookDemoDetailResponse:
         r = await self.repo.get_by_id(booking_id)
         if not r:
@@ -225,7 +235,7 @@ class SuperadminBookDemoService(BaseService):
             try:
                 v_tz = ZoneInfo(r.visitor_timezone)
             except (ZoneInfoNotFoundError, ValueError, KeyError, OSError):
-                v_tz = None   # keep the stored value visible even if the zone name is no longer valid
+                v_tz = None  
         at = r.preferred_at
         return SuperadminBookDemoDetailResponse(
             id=r.id, book_demo_id=r.book_demo_id, name=r.name, email=r.email, company=r.company,
@@ -240,7 +250,6 @@ class SuperadminBookDemoService(BaseService):
             created_at=r.created_at, updated_at=r.updated_at, deleted_at=r.deleted_at,
         )
 
-    # ── 6. Export (CSV of the current filters, no paging) ────────────────────
     async def export_csv(self, q: SuperadminBookDemoListQuery, user: User,
                          ip: str | None = None, user_agent: str | None = None) -> tuple[str, str]:
         rows = await self.repo.fetch_all(self._filters(q, self._now()), q.order, EXPORT_LIMIT)
@@ -254,7 +263,7 @@ class SuperadminBookDemoService(BaseService):
                              payload={"rows": len(rows), "view": q.view}, ip_address=ip, user_agent=user_agent)
         try:
             await self.session.commit()
-        except Exception:  # noqa: BLE001  the audit row must never block a download
+        except Exception: 
             await self.session.rollback()
             logger.exception("Book a Demo export audit failed - non-fatal")
         return f"book-a-demo-{self._today(self._now()):%Y%m%d}.csv", "﻿" + buf.getvalue()
