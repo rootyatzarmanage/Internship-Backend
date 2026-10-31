@@ -24,3 +24,14 @@ pip install -r requirements.txt
 alembic revision --autogenerate -m "add rbac tables"
 alembic upgrade head
 python -m ycpa.seeders.seed_rbac
+
+
+
+
+
+#thiru
+
+
+bcrypt>=4.1.2
+pip install uv
+uv pip install -r requirements.txt
